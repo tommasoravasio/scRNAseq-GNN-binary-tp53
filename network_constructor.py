@@ -26,27 +26,27 @@ def build_correlation_matrix(data, corr_threshold=0.1):
 
 def check_percentage_of_zeros(matrix):
     #controlliamo che percentuale delle caselle e diversa da 0
-    value_different_from_zero = np.sum(mat != 0) / (mat.shape[0]**2)
+    value_different_from_zero = np.sum(matrix != 0) / (matrix.shape[0]**2)
     print(f"Percentage of non-zero values in the correlation matrix: {value_different_from_zero }")
 
-def plot_the_graph(dataset_final, mat):
+def plot_the_graph(dataset_final, matrix):
     #plottiamo il grafo
     node_list = dataset_final.columns.to_list()
     num_nodes = len(node_list)
     tick_indices = np.arange(0, num_nodes, 100)
     tick_labels = [node_list[i] for i in tick_indices]
     plt.figure(figsize=(7, 7))
-    plt.imshow(mat, cmap='binary', interpolation='none')
+    plt.imshow(matrix, cmap='binary', interpolation='none')
     plt.xticks(ticks=tick_indices, labels=tick_labels, rotation=90)
     plt.yticks(ticks=tick_indices, labels=tick_labels)
     plt.show()
 
 
-def create_graph_from_df(df,mat):
+def create_graph_from_df(df,matrix):
     df_pyg = []
 
     for obs in df.itertuples(index=False):
-        edge_index = tg_utils.dense_to_sparse(torch.tensor(mat, dtype=torch.float32))[0]
+        edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
         y = int(obs.label == "mut") #"mut":1 , "wt":0
         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
