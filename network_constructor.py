@@ -1,3 +1,15 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import scipy.stats
+import math
+from torch_geometric.transforms import LargestConnectedComponents
+import torch_geometric.utils as tg_utils
+from torch_geometric.data import Data 
+import networkx as nx
+import torch
+
 
 def train_test_split(df,test_size=0.2,random_state=42):
     train_df, test_df = train_test_split(df)
@@ -78,18 +90,7 @@ def save_dataset(train_pyg, test_pyg, name_train="train_reteunica.pt", name_test
     torch.save(test_pyg, 'test_reteunica.pt')
 
 
-if __name__=="__main__":
-    import numpy as np
-    import pandas as pd
-    from sklearn.model_selection import train_test_split
-    import matplotlib.pyplot as plt
-    import scipy.stats
-    import math
-    from torch_geometric.transforms import LargestConnectedComponents
-    import torch_geometric.utils as tg_utils
-    from torch_geometric.data import Data 
-    import networkx as nx
-    import torch
+def main():
 
     df = pd.read_csv("INSERIRE TUO PATH")
     #split in train e test
@@ -120,4 +121,5 @@ if __name__=="__main__":
     # save_dataset(train_df_pyg, test_df_pyg)   #UNCOMMENTA PER SALVARE IL DATASET
 
 
-
+if __name__ == "__main__":
+    main()
