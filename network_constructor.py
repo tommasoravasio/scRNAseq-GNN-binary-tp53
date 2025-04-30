@@ -11,12 +11,9 @@ import networkx as nx
 import torch
 
 
-def train_test_split(df,test_size=0.2,random_state=42):
-    train_df, test_df = train_test_split(df)
-    print(f"shape del train test: {train_df.shape} \nshape del test set: {test_df.shape}")
-    return train_df, test_df
-
 def build_correlation_matrix(data, corr_threshold=0.1):
+    """
+    Crea la matrice di correlazione tra le features del dataset."""
     corr,p = scipy.stats.spearmanr(data)  #calcola la matrice di correlazione usando il coefficiente di Spearman
     alpha = 0.05/ math.comb(data.shape[1], 2)
     aus = ( (p<alpha) & (np.absolute(corr) > corr_threshold) ).astype(int)
@@ -25,11 +22,15 @@ def build_correlation_matrix(data, corr_threshold=0.1):
     return aus
 
 def check_percentage_of_zeros(matrix):
+    """
+    Controlla la percentuale di valori diversi da zero nella matrice di correlazione."""
     #controlliamo che percentuale delle caselle e diversa da 0
     value_different_from_zero = np.sum(matrix != 0) / (matrix.shape[0]**2)
     print(f"Percentage of non-zero values in the correlation matrix: {value_different_from_zero }")
 
-def plot_the_graph(dataset_final, matrix):
+def plot_the_correlation_matrix(dataset_final, matrix):
+    """
+    Plotta il grafo della matrice di correlazione."""
     #plottiamo il grafo
     node_list = dataset_final.columns.to_list()
     num_nodes = len(node_list)
@@ -42,7 +43,9 @@ def plot_the_graph(dataset_final, matrix):
     plt.show()
 
 
-def create_graph_from_df(df,matrix):
+def create_PyG_graph_from_df(df,matrix):
+    """
+    Crea un grafo PyG da un dataframe e una matrice di correlazione."""
     df_pyg = []
 
     for obs in df.itertuples(index=False):
@@ -58,19 +61,23 @@ def create_graph_from_df(df,matrix):
     return df_pyg
 
 def check_graph_structure(dataframe_pyg):
+    """
+    Controlla se tutti i grafi nel dataframe PyG hanno la stessa struttura."""
     i,j = np.random.randint(0, len(dataframe_pyg), 2)
     graph1 = dataframe_pyg[i]
     graph2 = dataframe_pyg[j]
     return (graph1.edge_index == graph2.edge_index).all() 
 
 def get_info_and_plot_graph(df_pyg):
+    """
+    Ottiene informazioni sul primo grafo e lo visualizza per vedere se formato va bene"""
     #TEST: test on the first network
     test=df_pyg[0] 
     print('=============================================================')
 
     # Gather some statistics about the first graph.
-    print(f'Number of nodes: {test.num_nodes}') #non ce numero definito perche teniamo solo componente piu grande (droppiamo alcuni nodi)
-    print(f'Number of edges: {test.num_edges}') #non ce numero definito perche tronchiamo con treshold
+    print(f'Number of nodes: {test.num_nodes}') 
+    print(f'Number of edges: {test.num_edges}') 
     print(f'NUmber of features per node: {test.num_node_features}') 
     print(f'Has isolated nodes: {test.has_isolated_nodes()}')
     print(f'Has self-loops: {test.has_self_loops()}')
@@ -85,14 +92,15 @@ def get_info_and_plot_graph(df_pyg):
 
 
 def save_dataset(train_pyg, test_pyg, name_train="train_reteunica.pt", name_test="test_reteunica.pt"):
+    """
+    Salva i dataset PyG in file .pt"""
     #salva il dataset
     torch.save(train_pyg, 'train_reteunica.pt')
     torch.save(test_pyg, 'test_reteunica.pt')
 
 
-def main():
-
-    df = pd.read_csv("INSERIRE TUO PATH")
+def main(path):
+    df = pd.read_csv(path)
     #split in train e test
     train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
     print(f"shape del train test: {train_df.shape} \nshape del test set: {test_df.shape}")
@@ -100,11 +108,11 @@ def main():
     #trova la matrice di correlazione
     mat=build_correlation_matrix(train_df.iloc[:,:-1])
     check_percentage_of_zeros(mat)
-    plot_the_graph(train_df, mat)
+    plot_the_correlation_matrix(train_df, mat)
 
     #crea le strutture per pytorch geometric
-    train_df_pyg = create_graph_from_df(train_df, mat)
-    test_df_pyg = create_graph_from_df(test_df, mat)
+    train_df_pyg = create_PyG_graph_from_df(train_df, mat)
+    test_df_pyg = create_PyG_graph_from_df(test_df, mat)
 
     #check sul primo elemento del train e test set
     print(f"First element of train_df_pyg: {train_df_pyg[0]}")
@@ -122,4 +130,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main('/Users/tommasoravasio/Desktop/BSc Thesis/Mio/dataset_final_unica_rete.csv')   #Metti il tuo dataset qui
+
+
+
