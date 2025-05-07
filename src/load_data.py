@@ -19,14 +19,14 @@ def one_to_three_columns_features_file(file_path):
     features.to_csv(file_path, header=False, index=False, sep="\t")
 
 
-def load__expression_data(file_path, verbosity=False):   #file path must be a folder
+def load_expression_data(file_path, verbosity=False):   #file path must be a folder
     """
     Loads expression data from a 10X Genomics file into an AnnData object and returns a pandas DataFrame.
     The expected format is a folder containing 3 files: matrix.mtx, barcodes.tsv, and features.tsv.
     IMPORTANT: THE FILES MUST BE COMPRESSED WITH GZIP, OTHERWISE scanpy.read_10x_mtx() WILL NOT WORK.
     """
     #check on number of columns in features.tsv
-    features_path = os.path.join(file_path, "features.tsv")
+    features_path = os.path.join(file_path, "features.tsv.gz")
     features = pd.read_csv(features_path, header=None, sep="\t", compression="gzip")
     if features.shape[1] == 1:
         one_to_three_columns_features_file(features_path)
@@ -69,6 +69,9 @@ def check_on_cell_lines_correspondence(df_expression, df_mutation, mutation_colu
     in the mutation data, not the number of cell lines that can be found in both dataframes.
     """
 
+    if mutation_column_name not in df_mutation.columns:
+        raise KeyError(f"The column '{mutation_column_name}' does not exist in the mutation DataFrame.")
+
     df_cell_lines = pd.DataFrame({"Cell Lines": df_expression.index.str.split('_').str[0]})
 
     matching_cell_lines = df_cell_lines[df_cell_lines["Cell Lines"].isin(df_mutation[mutation_column_name])]
@@ -78,3 +81,20 @@ def check_on_cell_lines_correspondence(df_expression, df_mutation, mutation_colu
     print(f"Percentage of matching cell: {len(matching_cell_lines)/len(df_cell_lines)*100:.2f}%")
 
 
+def test():
+    """
+    Test the functions in this module.
+    """
+    expression_data_path = "data/Expression_Matrix"
+    df_expression = load_expression_data(expression_data_path, verbosity=True)
+
+    
+    mutation_data_path = "data/Mutation/CellLineDownload_r21.csv"
+    df_mutation = load_mutation_data(mutation_data_path, verbosity=True)
+
+    
+    check_on_cell_lines_correspondence(df_expression, df_mutation)
+
+
+if __name__ == "__main__":
+    test()
