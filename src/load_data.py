@@ -1,0 +1,80 @@
+import scanpy as sc
+import pandas as pd
+import anndata as ad
+import os
+
+
+def one_to_three_columns_features_file(file_path):
+    """
+    scanpy.read_10x_mtx requires the features.tsv file to have 3 columns. 
+    This function creates two new useless columns to ensure the function does not return an error.
+    """
+    features = pd.read_csv(file_path, header=None, sep="\t")
+
+    assert features.shape[1] == 1
+
+    features[1] = features[0] 
+    features[2] = "Gene Expression"
+
+    features.to_csv(file_path, header=False, index=False, sep="\t")
+
+
+def load__expression_data(file_path, verbosity=False):   #file path must be a folder
+    """
+    Loads expression data from a 10X Genomics file into an AnnData object and returns a pandas DataFrame.
+    The expected format is a folder containing 3 files: matrix.mtx, barcodes.tsv, and features.tsv.
+    IMPORTANT: THE FILES MUST BE COMPRESSED WITH GZIP, OTHERWISE scanpy.read_10x_mtx() WILL NOT WORK.
+    """
+    #check on number of columns in features.tsv
+    features_path = os.path.join(file_path, "features.tsv")
+    features = pd.read_csv(features_path, header=None, sep="\t", compression="gzip")
+    if features.shape[1] == 1:
+        one_to_three_columns_features_file(features_path)
+    assert features.shape[1] == 3, f"features.tsv must have 3 columns, but has {features.shape[1]} columns"
+   
+    adata = sc.read_10x_mtx(file_path,
+    var_names="gene_ids",
+    cache=True)
+    df_expression=ad.AnnData.to_df(adata)
+
+    if verbosity:
+        print(f"df_expression shape: {df_expression.shape}")
+        print(f"df_expression columns: {df_expression.columns}")
+        print(f"df_expression index: {df_expression.index}")
+        print(f"df_expression head: {df_expression.head()}")
+
+    return df_expression
+
+
+def load_mutation_data(file_path, verbosity=False):
+    """
+    Carica i dati delle mutazioni da un file CSV.
+    """
+    df_mutazioni = pd.read_csv(file_path, sep=",", index_col=0)
+    
+    if verbosity:
+        print(f"df_mutazioni shape: {df_mutazioni.shape}")
+        print(f"df_mutazioni columns: {df_mutazioni.columns}")
+        print(f"df_mutazioni index: {df_mutazioni.index}")
+        print(f"df_mutazioni head: {df_mutazioni.head()}")
+
+    return df_mutazioni
+
+def check_on_cell_lines_correspondence(df_expression, df_mutation, mutation_column_name="Sample_Name"):
+    """
+    Check how many cells in the expression data has their rispective cell lines in the mutation data.
+    The cell lines are obtained by the barcode of the expression data.
+    mutation_column_name is the name of the column in the mutation dataframe that contains the cell lines.
+    ATTENTION: this returns the number of observations from expression data with the corresponding cell line 
+    in the mutation data, not the number of cell lines that can be found in both dataframes.
+    """
+
+    df_cell_lines = pd.DataFrame({"Cell Lines": df_expression.index.str.split('_').str[0]})
+
+    matching_cell_lines = df_cell_lines[df_cell_lines["Cell Lines"].isin(df_mutation[mutation_column_name])]
+
+    print(f"Number matching lines: {len(matching_cell_lines)}")
+
+    print(f"Percentage of matching cell: {len(matching_cell_lines)/len(df_cell_lines)*100:.2f}%")
+
+
