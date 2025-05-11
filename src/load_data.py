@@ -19,7 +19,7 @@ def one_to_three_columns_features_file(file_path):
     features.to_csv(file_path, header=False, index=False, sep="\t")
 
 
-def load_expression_data(file_path, verbosity=False):   #file path must be a folder
+def load_expression_data(file_path, verbosity=False): 
     """
     Loads expression data from a 10X Genomics file into an AnnData object and returns a pandas DataFrame.
     The expected format is a folder containing 3 files: matrix.mtx, barcodes.tsv, and features.tsv.
@@ -40,7 +40,6 @@ def load_expression_data(file_path, verbosity=False):   #file path must be a fol
     if verbosity:
         print(f"df_expression shape: {df_expression.shape}")
         print(f"df_expression columns: {df_expression.columns}")
-        print(f"df_expression index: {df_expression.index}")
         print(f"df_expression head: {df_expression.head()}")
 
     return df_expression
@@ -50,17 +49,22 @@ def load_mutation_data(file_path, verbosity=False):
     """
     Carica i dati delle mutazioni da un file CSV.
     """
-    df_mutazioni = pd.read_csv(file_path, sep=",", index_col=0)
+    df_mutation = pd.read_csv(file_path, sep=",", index_col=0)
+    df_mutation['Sample_Name_cleaned'] = df_mutation['Sample_Name'].str.replace('-', '', regex=False)
     
     if verbosity:
-        print(f"df_mutazioni shape: {df_mutazioni.shape}")
-        print(f"df_mutazioni columns: {df_mutazioni.columns}")
-        print(f"df_mutazioni index: {df_mutazioni.index}")
-        print(f"df_mutazioni head: {df_mutazioni.head()}")
+        print(f"df_mutation shape: {df_mutation.shape}")
+        print(f"df_mutation columns: {df_mutation.columns}")
+        print(f"df_mutation head: {df_mutation.head()}")
 
-    return df_mutazioni
+    return df_mutation
 
-def check_on_cell_lines_correspondence(df_expression, df_mutation, mutation_column_name="Sample_Name"):
+def add_cleaned_column(df, column_name="Sample_Name"):
+    "remove the hypens from the cell lines identification codes"
+    df[f"{column_name}_cleaned"] = df[column_name].str.replace('-', '', regex=False)
+    return df
+
+def check_on_cell_lines_correspondence(df_expression, df_mutation, mutation_column_name="Sample_Name_cleaned"):
     """
     Check how many cells in the expression data has their rispective cell lines in the mutation data.
     The cell lines are obtained by the barcode of the expression data.
@@ -92,9 +96,13 @@ def test():
     mutation_data_path = "data/Mutation/CellLineDownload_r21.csv"
     df_mutation = load_mutation_data(mutation_data_path, verbosity=True)
 
+
+
     
     check_on_cell_lines_correspondence(df_expression, df_mutation)
 
 
 if __name__ == "__main__":
     test()
+
+
