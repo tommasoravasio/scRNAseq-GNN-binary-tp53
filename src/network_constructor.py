@@ -13,8 +13,8 @@ import torch
 
 def build_correlation_matrix(data, corr_threshold=0.1):
     """
-    Crea la matrice di correlazione tra le features del dataset."""
-    corr,p = scipy.stats.spearmanr(data)  #calcola la matrice di correlazione usando il coefficiente di Spearman
+    Creates the correlation matrix between the features of the dataset using Spearman correlation."""
+    corr,p = scipy.stats.spearmanr(data)  
     alpha = 0.05/ math.comb(data.shape[1], 2)
     aus = ( (p<alpha) & (np.absolute(corr) > corr_threshold) ).astype(int)
     np.fill_diagonal(aus,0)
