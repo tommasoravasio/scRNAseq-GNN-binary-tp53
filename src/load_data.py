@@ -19,9 +19,13 @@ def one_to_three_columns_features_file(file_path):
     features.to_csv(file_path, header=False, index=False, sep="\t")
 
 
+
+
+
 def load_expression_data(file_path, verbosity=False): 
     """
-    Loads expression data from a 10X Genomics file into an AnnData object and returns a pandas DataFrame.
+    Loads expression data from a 10X Genomics file into an AnnData object.
+    If verbosity is True it prints some info about the dataframe encaptured in the AnnData object.
     The expected format is a folder containing 3 files: matrix.mtx, barcodes.tsv, and features.tsv.
     IMPORTANT: THE FILES MUST BE COMPRESSED WITH GZIP, OTHERWISE scanpy.read_10x_mtx() WILL NOT WORK.
     """
@@ -42,7 +46,9 @@ def load_expression_data(file_path, verbosity=False):
         print(f"df_expression columns: {df_expression.columns}")
         print(f"df_expression head: {df_expression.head()}")
 
-    return df_expression
+    return adata
+
+
 
 
 def load_mutation_data(file_path, verbosity=False):
