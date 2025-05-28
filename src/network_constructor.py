@@ -9,14 +9,16 @@ import torch_geometric.utils as tg_utils
 from torch_geometric.data import Data 
 import networkx as nx
 import torch
+import os
 
 
-def build_correlation_matrix(data, corr_threshold=0.1):
+def build_correlation_matrix(data, corr_threshold=0.1, p_value_threshold=0.05):
     """
     Creates the correlation matrix between the features of the dataset using Spearman correlation."""
     corr,p = scipy.stats.spearmanr(data)  
-    alpha = 0.05/ math.comb(data.shape[1], 2)
-    aus = ( (p<alpha) & (np.absolute(corr) > corr_threshold) ).astype(int)
+    alpha = p_value_threshold / math.comb(data.shape[1], 2)
+    #aus = ( (p<alpha) & (np.absolute(corr) > corr_threshold) ).astype(int)     #FOR BOOLEAN MATRIX
+    aus = np.where((p <= alpha) & (np.absolute(corr) >= corr_threshold), corr, 0)  #FOR CORRELATION MATRIX
     np.fill_diagonal(aus,0)
 
     return aus
@@ -24,14 +26,12 @@ def build_correlation_matrix(data, corr_threshold=0.1):
 def check_percentage_of_zeros(matrix):
     """
     Controlla la percentuale di valori diversi da zero nella matrice di correlazione."""
-    #controlliamo che percentuale delle caselle e diversa da 0
     value_different_from_zero = np.sum(matrix != 0) / (matrix.shape[0]**2)
     print(f"Percentage of non-zero values in the correlation matrix: {value_different_from_zero }")
 
 def plot_the_correlation_matrix(dataset_final, matrix):
     """
     Plotta il grafo della matrice di correlazione."""
-    #plottiamo il grafo
     node_list = dataset_final.columns.to_list()
     num_nodes = len(node_list)
     tick_indices = np.arange(0, num_nodes, 100)
@@ -42,23 +42,59 @@ def plot_the_correlation_matrix(dataset_final, matrix):
     plt.yticks(ticks=tick_indices, labels=tick_labels)
     plt.show()
 
+# #VERSIONE PRIMA DI FARE IMPLEMENTAZIONE PER CLUSTER
+# def create_PyG_graph_from_df(df,matrix, label_column="mutation_status"):
+#     """
+#     Crea un grafo PyG da un dataframe e una matrice di correlazione."""
+#     df_pyg = []
+#     edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
 
-def create_PyG_graph_from_df(df,matrix):
+#     for obs in df.itertuples(index=False):
+#         #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
+#         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
+#         y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
+#         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
+
+#         transform = LargestConnectedComponents(num_components=1) #!!! Non dovremmo avere components separati ma cerca di capire
+#         data = transform(data)
+
+#         df_pyg.append(data)
+#     return df_pyg
+
+def create_PyG_graph_from_df(df,matrix, label_column="mutation_status", label="train"):
     """
-    Crea un grafo PyG da un dataframe e una matrice di correlazione."""
-    df_pyg = []
+    ATTENTION: run this function only on the HPC cluster
+    Crea un grafo PyG da un dataframe e una matrice di correlazione.
+    There must exist a folder named graphs with two folders inside named train and test.
+    Use label to indicate if we are building for train or for test"""
+    #df_pyg = []
+    edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
 
-    for obs in df.itertuples(index=False):
-        edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
+    #for obs in df.itertuples(index=False):
+    for i, obs in enumerate(df.itertuples(index=False)):
+
+        folder = f"graphs/{label}/batch_{i // 100:02d}"
+        os.makedirs(folder, exist_ok=True)
+        path = f"{folder}/graph_{i:05d}.pt"
+        if os.path.exists(path):
+            continue
+
+        #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
-        y = int(obs.label == "mut") #"mut":1 , "wt":0
+        y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
 
-        transform = LargestConnectedComponents(num_components=1) #!!! Non dovremmo avere components separati ma cerca di capire
-        data = transform(data)
+        #!!! Non dovremmo avere components separati ma cerca di capire
+        # transform = LargestConnectedComponents(num_components=1)
+        # data = transform(data)
 
-        df_pyg.append(data)
-    return df_pyg
+        #df_pyg.append(data)
+        torch.save(data,f"graphs/{label}/batch_{i // 100:02d}/graph_{i:05d}.pt")
+    return None
+
+
+
+
 
 def check_graph_structure(dataframe_pyg):
     """

@@ -70,27 +70,6 @@ def add_cleaned_column(df, column_name="Sample_Name"):
     df[f"{column_name}_cleaned"] = df[column_name].str.replace('-', '', regex=False)
     return df
 
-def check_on_cell_lines_correspondence(df_expression, df_mutation, mutation_column_name="Sample_Name_cleaned"):
-    """
-    Check how many cells in the expression data has their rispective cell lines in the mutation data.
-    The cell lines are obtained by the barcode of the expression data.
-    mutation_column_name is the name of the column in the mutation dataframe that contains the cell lines.
-    ATTENTION: this returns the number of observations from expression data with the corresponding cell line 
-    in the mutation data, not the number of cell lines that can be found in both dataframes.
-    """
-
-    if mutation_column_name not in df_mutation.columns:
-        raise KeyError(f"The column '{mutation_column_name}' does not exist in the mutation DataFrame.")
-
-    df_cell_lines = pd.DataFrame({"Cell Lines": df_expression.index.str.split('_').str[0]})
-
-    matching_cell_lines = df_cell_lines[df_cell_lines["Cell Lines"].isin(df_mutation[mutation_column_name])]
-
-    print(f"Number matching lines: {len(matching_cell_lines)}")
-
-    print(f"Percentage of matching cell: {len(matching_cell_lines)/len(df_cell_lines)*100:.2f}%")
-
-
 def test():
     """
     Test the functions in this module.
@@ -102,10 +81,6 @@ def test():
     mutation_data_path = "data/Mutation/CellLineDownload_r21.csv"
     df_mutation = load_mutation_data(mutation_data_path, verbosity=True)
 
-
-
-    
-    check_on_cell_lines_correspondence(df_expression, df_mutation)
 
 
 if __name__ == "__main__":

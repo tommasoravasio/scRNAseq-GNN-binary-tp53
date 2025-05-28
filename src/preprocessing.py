@@ -1,0 +1,58 @@
+import scanpy as sc
+import anndata as ad
+import mygene
+
+def get_genes_symbols(adata, EnsIDs_column, new_column_name='gene_symbols_mapped'):
+    """
+    Map Ensembl gene IDs to gene symbols in the AnnData object.
+    EnsIDs_column is the name of the column in adata.var that contains the Ensembl IDs.
+    The names are stored in a new column called 'gene_symbols_mapped'.
+    """
+    mg = mygene.MyGeneInfo()
+    ensembl_ids = adata.var[EnsIDs_column].tolist()
+    query = mg.querymany(ensembl_ids, scopes="ensembl.gene", fields="symbol,name", species="human")
+
+    id_to_symbol = {r['query']: r.get('symbol', r['query']) for r in query}
+
+    adata.var[new_column_name] = adata.var[EnsIDs_column].map(id_to_symbol)
+
+
+def check_sparsity(adata):
+    """
+    Check the sparsity of the data in the AnnData object.
+    """
+    print(f"Number of cells: {adata.shape[0]}")
+    print(f"Number of genes: {adata.shape[1]}")
+    print(f"Number of non-zero entries: {adata.X.nnz}")
+    print(f"Sparsity: {1 - (adata.X.nnz / (adata.shape[0] * adata.shape[1])):.2%}")
+
+
+def show_qc_plots(adata, violin_cols=None, scatter_x=None, scatter_y=None):
+    """
+    Show quality control plots for the AnnData object.
+    Violin must be a list of strings and scatter_x and scatter_y must be strings.
+    """
+    sc.pp.calculate_qc_metrics(
+    adata,inplace=True, log1p=True)
+    sc.pl.violin(adata,violin_cols,jitter=0.4,multi_panel=True)
+    sc.pl.scatter(adata, scatter_x, scatter_y)
+
+def add_mutation_column(adata, df_mutation, cell_lines_column_name = "Sample_Name_cleaned", mutation_status_column="TP53_mutated", new_obs_column="mutation_status"): 
+    """ 
+    Aggiunge una colonna ad adata.obs che indica se la cellula appartiene a una cell line mutata.
+    Droppa le cellule che non hanno un corrispondente in df_mutation.
+    """
+    adata.layers["pre_mutation_match"] = adata.X.copy()
+
+    adata.obs["cell_line"]=adata.obs_names.str.split('_').str[0]
+    mutation_dict = df_mutation.set_index(cell_lines_column_name)[mutation_status_column].to_dict()
+    adata.obs[new_obs_column] = adata.obs["cell_line"].map(mutation_dict)
+
+    not_found = adata.obs.loc[adata.obs[new_obs_column].isna(), "cell_line"].unique()
+    print(f"Cell lines not found in df_mutation: {not_found}")
+    
+    initial_n = adata.n_obs
+    adata._inplace_subset_obs(~adata.obs[new_obs_column].isna())
+    print(f"Removed {initial_n - adata.n_obs} cells with unknown mutation status.")
+    print(f"Number matching lines: {adata.n_obs}")
+    print(f"Percentage of matching cell: {adata.n_obs / initial_n * 100:.2f}%")
