@@ -15,5 +15,5 @@ conda activate tp53
 
 cd $HOME/tp53
 
-python jobs/network_job.py
+python src/network_constructor.py
 

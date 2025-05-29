@@ -1,0 +1,14 @@
+#!/bin/bash
+#SBATCH --job-name=run_model
+#SBATCH --output=model_output_%j.out
+#SBATCH --error=model_error_%j.err
+#SBATCH --time=02:00:00
+#SBATCH --mem=32G
+#SBATCH --cpus-per-task=4
+
+
+module load miniconda3
+eval "$(conda shell.bash hook)"
+conda activate tp53
+cd $HOME/tp53
+python src/model_constructor.py

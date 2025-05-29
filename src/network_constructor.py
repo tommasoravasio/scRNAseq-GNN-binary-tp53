@@ -77,37 +77,37 @@ def create_PyG_graph_from_df(df,matrix, label_column="mutation_status"):
 
 
 
-# #VERSIONE PER CLUSTER
-# def create_PyG_graph_from_df(df,matrix, label_column="mutation_status", label="train"):
-#     """
-#     ATTENTION: run this function only on the HPC cluster
-#     Crea un grafo PyG da un dataframe e una matrice di correlazione.
-#     There must exist a folder named graphs with two folders inside named train and test.
-#     Use label to indicate if we are building for train or for test"""
-#     #df_pyg = []
-#     edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
+#VERSIONE PER CLUSTER
+def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", label="train"):
+    """
+    ATTENTION: run this function only on the HPC cluster
+    Crea un grafo PyG da un dataframe e una matrice di correlazione.
+    There must exist a folder named graphs with two folders inside named train and test.
+    Use label to indicate if we are building for train or for test"""
+    #df_pyg = []
+    edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
 
-#     #for obs in df.itertuples(index=False):
-#     for i, obs in enumerate(df.itertuples(index=False)):
+    #for obs in df.itertuples(index=False):
+    for i, obs in enumerate(df.itertuples(index=False)):
 
-#         folder = f"graphs/{label}/batch_{i // 100:02d}"
-#         os.makedirs(folder, exist_ok=True)
-#         path = f"{folder}/graph_{i:05d}.pt"
-#         if os.path.exists(path):
-#             continue
+        folder = f"graphs/{label}/batch_{i // 100:02d}"
+        os.makedirs(folder, exist_ok=True)
+        path = f"{folder}/graph_{i:05d}.pt"
+        if os.path.exists(path):
+            continue
 
-#         #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
-#         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
-#         y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
-#         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
+        #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
+        x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
+        y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
+        data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
 
-#         #!!! Non dovremmo avere components separati ma cerca di capire
-#         # transform = LargestConnectedComponents(num_components=1)
-#         # data = transform(data)
+        #!!! Non dovremmo avere components separati ma cerca di capire
+        # transform = LargestConnectedComponents(num_components=1)
+        # data = transform(data)
 
-#         #df_pyg.append(data)
-#         torch.save(data,f"graphs/{label}/batch_{i // 100:02d}/graph_{i:05d}.pt")
-#     return None
+        #df_pyg.append(data)
+        torch.save(data,f"graphs/{label}/batch_{i // 100:02d}/graph_{i:05d}.pt")
+    return None
 
 
 
@@ -150,38 +150,15 @@ def save_dataset(train_pyg, test_pyg, name_train="train_reteunica.pt", name_test
     torch.save(test_pyg, 'test_reteunica.pt')
 
 
-def main(path):
-    df = pd.read_csv(path)
-    #split in train e test
-    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
-    print(f"shape del train test: {train_df.shape} \nshape del test set: {test_df.shape}")
-    
-    #trova la matrice di correlazione
-    mat=build_correlation_matrix(train_df.iloc[:,:-1])
-    check_percentage_of_zeros(mat)
-    plot_the_correlation_matrix(train_df, mat)
-
-    #crea le strutture per pytorch geometric
-    train_df_pyg = create_PyG_graph_from_df(train_df, mat)
-    test_df_pyg = create_PyG_graph_from_df(test_df, mat)
-
-    #check sul primo elemento del train e test set
-    print(f"First element of train_df_pyg: {train_df_pyg[0]}")
-    print(f"First element of test_df_pyg: {test_df_pyg[0]}")
-
-    #check sulla struttura del grafo
-    assert check_graph_structure(train_df_pyg), "The graphs in the train set do not have the same structure."
-    assert check_graph_structure(test_df_pyg), "The graphs in the test set do not have the same structure."
-
-    #get info and plot the first graph obtaied
-    get_info_and_plot_graph(train_df_pyg)
-
-    # #salva i dataset
-    # save_dataset(train_df_pyg, test_df_pyg)   #UNCOMMENTA PER SALVARE IL DATASET
-
+def main():
+    df = pd.read_csv("notebooks/final_preprocessed_data.csv", index_col=0)
+    train_df, test_df =train_test_split(df, test_size=0.2, random_state=42)
+    mat = build_correlation_matrix(train_df.iloc[:, :-1], corr_threshold=0.05)
+    create_PyG_graph_from_df_cluster(train_df, mat, label_column="mutation_status",label="train")
+    create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test")
 
 if __name__ == "__main__":
-    main('/Users/tommasoravasio/Desktop/BSc Thesis/Mio/dataset_final_unica_rete.csv')   #Metti il tuo dataset qui
+    main()   
 
 
 

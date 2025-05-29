@@ -36,7 +36,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = CrossEntropyLoss().to(device)
-    #########################
+    
 
     def train(model,train_loader):
         model.train()
@@ -72,10 +72,13 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     return model
 
 
-    
 
+def main():
+    # IMPORTA GRAFI COME train_df_pyg test_df_pyg
+    model =train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 4, batch_size = 1)
 
-
+if __name__ == "__main__":
+    main()
 
 
 
