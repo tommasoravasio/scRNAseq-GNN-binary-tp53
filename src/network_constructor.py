@@ -12,15 +12,28 @@ import torch
 import os
 
 
-def build_correlation_matrix(data, corr_threshold=0.1, p_value_threshold=0.05):
+def build_correlation_matrix(data, corr_threshold=0.1, p_value_threshold=0.05, p_val="yes"):
     """
-    Creates the correlation matrix between the features of the dataset using Spearman correlation."""
-    corr,p = scipy.stats.spearmanr(data)  
-    alpha = p_value_threshold / math.comb(data.shape[1], 2)
-    #aus = ( (p<alpha) & (np.absolute(corr) > corr_threshold) ).astype(int)     #FOR BOOLEAN MATRIX
-    aus = np.where((p <= alpha) & (np.absolute(corr) >= corr_threshold), corr, 0)  #FOR CORRELATION MATRIX
-    np.fill_diagonal(aus,0)
+    Creates the correlation matrix between the features of the dataset.
+    
+    If p_val == "yes": uses Spearman correlation + p-value threshold (slow, memory-heavy).
+    If p_val == "no" : uses rank + Pearson (Spearman approximation, no p-values, memory-efficient).
+    """
+    
+    if p_val == "yes":
+        # Full Spearman with p-values (expensive!)
+        corr, p = scipy.stats.spearmanr(data)
+        alpha = p_value_threshold / math.comb(data.shape[1], 2)
+        aus = np.where((p <= alpha) & (np.abs(corr) >= corr_threshold), corr, 0)
+    
+    else:
+        # Memory-efficient version: rank + Pearson
+        ranked_data = np.apply_along_axis(scipy.stats.rankdata, axis=0, arr=data)
+        corr = np.corrcoef(ranked_data, rowvar=False)
+        aus = np.where(np.abs(corr) >= corr_threshold, corr, 0)
 
+    np.fill_diagonal(aus, 0)
+    
     return aus
 
 def check_percentage_of_zeros(matrix):
@@ -42,57 +55,59 @@ def plot_the_correlation_matrix(dataset_final, matrix):
     plt.yticks(ticks=tick_indices, labels=tick_labels)
     plt.show()
 
-# #VERSIONE PRIMA DI FARE IMPLEMENTAZIONE PER CLUSTER
-# def create_PyG_graph_from_df(df,matrix, label_column="mutation_status"):
-#     """
-#     Crea un grafo PyG da un dataframe e una matrice di correlazione."""
-#     df_pyg = []
-#     edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
-
-#     for obs in df.itertuples(index=False):
-#         #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
-#         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
-#         y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
-#         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
-
-#         transform = LargestConnectedComponents(num_components=1) #!!! Non dovremmo avere components separati ma cerca di capire
-#         data = transform(data)
-
-#         df_pyg.append(data)
-#     return df_pyg
-
-def create_PyG_graph_from_df(df,matrix, label_column="mutation_status", label="train"):
+#VERSIONE PRIMA DI FARE IMPLEMENTAZIONE PER CLUSTER
+def create_PyG_graph_from_df(df,matrix, label_column="mutation_status"):
     """
-    ATTENTION: run this function only on the HPC cluster
-    Crea un grafo PyG da un dataframe e una matrice di correlazione.
-    There must exist a folder named graphs with two folders inside named train and test.
-    Use label to indicate if we are building for train or for test"""
-    #df_pyg = []
+    Crea un grafo PyG da un dataframe e una matrice di correlazione."""
+    df_pyg = []
     edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
 
-    #for obs in df.itertuples(index=False):
-    for i, obs in enumerate(df.itertuples(index=False)):
-
-        folder = f"graphs/{label}/batch_{i // 100:02d}"
-        os.makedirs(folder, exist_ok=True)
-        path = f"{folder}/graph_{i:05d}.pt"
-        if os.path.exists(path):
-            continue
-
+    for obs in df.itertuples(index=False):
         #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
         y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
 
-        #!!! Non dovremmo avere components separati ma cerca di capire
-        # transform = LargestConnectedComponents(num_components=1)
-        # data = transform(data)
+        transform = LargestConnectedComponents(num_components=1) #!!! Non dovremmo avere components separati ma cerca di capire
+        data = transform(data)
 
-        #df_pyg.append(data)
-        torch.save(data,f"graphs/{label}/batch_{i // 100:02d}/graph_{i:05d}.pt")
-    return None
+        df_pyg.append(data)
+    return df_pyg
 
 
+
+
+# #VERSIONE PER CLUSTER
+# def create_PyG_graph_from_df(df,matrix, label_column="mutation_status", label="train"):
+#     """
+#     ATTENTION: run this function only on the HPC cluster
+#     Crea un grafo PyG da un dataframe e una matrice di correlazione.
+#     There must exist a folder named graphs with two folders inside named train and test.
+#     Use label to indicate if we are building for train or for test"""
+#     #df_pyg = []
+#     edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
+
+#     #for obs in df.itertuples(index=False):
+#     for i, obs in enumerate(df.itertuples(index=False)):
+
+#         folder = f"graphs/{label}/batch_{i // 100:02d}"
+#         os.makedirs(folder, exist_ok=True)
+#         path = f"{folder}/graph_{i:05d}.pt"
+#         if os.path.exists(path):
+#             continue
+
+#         #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
+#         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
+#         y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
+#         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
+
+#         #!!! Non dovremmo avere components separati ma cerca di capire
+#         # transform = LargestConnectedComponents(num_components=1)
+#         # data = transform(data)
+
+#         #df_pyg.append(data)
+#         torch.save(data,f"graphs/{label}/batch_{i // 100:02d}/graph_{i:05d}.pt")
+#     return None
 
 
 
