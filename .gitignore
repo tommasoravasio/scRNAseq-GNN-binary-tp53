@@ -4,3 +4,7 @@ cache/
 notebooks/final_preprocessed_data.csv
 notebooks/preprocessed_data.h5ad
 notebooks/graphs/.DS_Store
+graphs/
+cache/
+final_preprocessed_data.csv
+preprocessed_data.h5ad
