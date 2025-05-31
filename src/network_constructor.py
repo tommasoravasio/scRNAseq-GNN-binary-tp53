@@ -78,7 +78,7 @@ def create_PyG_graph_from_df(df,matrix, label_column="mutation_status"):
 
 
 #VERSIONE PER CLUSTER
-def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", label="train"):
+def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", label="train",graphs_per_batch=500):
     """
     ATTENTION: run this function only on the HPC cluster
     Crea un grafo PyG da un dataframe e una matrice di correlazione.
@@ -86,27 +86,31 @@ def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", 
     Use label to indicate if we are building for train or for test"""
     #df_pyg = []
     edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
+    graphs = []
 
     #for obs in df.itertuples(index=False):
     for i, obs in enumerate(df.itertuples(index=False)):
-
-        folder = f"graphs/{label}/batch_{i // 100:02d}"
-        os.makedirs(folder, exist_ok=True)
-        path = f"{folder}/graph_{i:05d}.pt"
-        if os.path.exists(path):
-            continue
 
         #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
         y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
+        graphs.append(data)
 
         #!!! Non dovremmo avere components separati ma cerca di capire
         # transform = LargestConnectedComponents(num_components=1)
         # data = transform(data)
 
         #df_pyg.append(data)
-        torch.save(data,f"graphs/{label}/batch_{i // 100:02d}/graph_{i:05d}.pt")
+
+        if (i + 1) % graphs_per_batch == 0 or i == len(df) - 1:
+            batch_index = i // graphs_per_batch
+            folder = f"graphs/{label}"
+            os.makedirs(folder, exist_ok=True)
+            filename = f"{folder}/batch_{batch_index:03d}.pt"
+            torch.save(graphs, filename)
+            print(f"Saved {len(graphs)} graphs to {filename}")
+            graphs = []  
     return None
 
 

@@ -6,6 +6,9 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
 from torch.nn import Module, CrossEntropyLoss
 from torch_geometric.loader import DataLoader
+from pathlib import Path
+import os
+import csv
 
 
 
@@ -37,6 +40,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = CrossEntropyLoss().to(device)
     
+    os.makedirs("results",exist_ok=True)
 
     def train(model,train_loader):
         model.train()
@@ -63,19 +67,38 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
                 correct += int((pred == data.y).sum())
         return correct / len(test_loader.dataset)
     
-    for epoch in range(1,epochs+1):
-        loss = train(model, train_loader)
-        train_acc = test(model,train_loader)
-        test_acc = test(model,test_loader)
-        print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}")
+
+    log_path = "results/training_log.csv"
+    with open(log_path,mode="w",newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Epoch", "Loss", "Train Accuracy", "Test Accuracy"])
+
+        for epoch in range(1,epochs+1):
+            loss = train(model, train_loader)
+            train_acc = test(model,train_loader)
+            test_acc = test(model,test_loader)
+            print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}")
+            writer.writerow([epoch, loss, train_acc, test_acc])
+    
+    model_path = "results/gcn_model.pt"
+    torch.save(model.state_dict(),model_path)
     
     return model
 
 
+def load_graphs(path):
+    graph_list = []
+    for pt_file in sorted(Path(path).glob("*.pt")):
+        graph = torch.load(pt_file,weights_only=False)
+        graph_list.append(graph)
+    return graph_list
 
 def main():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    model =train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 4, batch_size = 1)
+    train_df_pyg = load_graphs("data/graphs/train")
+    test_df_pyg = load_graphs("data/graphs/test")
+
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 30, batch_size = 32)
 
 if __name__ == "__main__":
     main()
