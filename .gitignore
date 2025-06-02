@@ -10,3 +10,4 @@ final_preprocessed_data.csv
 preprocessed_data.h5ad
 notebooks/graphs/
 data/graphs_no_treshold/
+data/
