@@ -95,11 +95,12 @@ def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", 
         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
         y = int(getattr(obs, label_column) == "mut") #"mut":1 , "wt":0
         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
-        graphs.append(data)
+        
 
         #!!! Non dovremmo avere components separati ma cerca di capire
         transform = LargestConnectedComponents(num_components=1)
         data = transform(data)
+        graphs.append(data)
 
         #df_pyg.append(data)
 
@@ -108,7 +109,7 @@ def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", 
             folder = f"graphs{graphs_folder_ID}/{label}"
             os.makedirs(folder, exist_ok=True)
             filename = f"{folder}/batch_{batch_index:03d}.pt"
-            torch.save(graphs, filename)
+            torch.save(graphs, filename, pickle_protocol=5)
             print(f"Saved {len(graphs)} graphs to {filename}")
             graphs = []  
     return None
@@ -158,8 +159,8 @@ def main():
     df = pd.read_csv("notebooks/final_preprocessed_data.csv", index_col=0)
     train_df, test_df =train_test_split(df, test_size=0.2, random_state=42)
     mat = build_correlation_matrix(train_df.iloc[:, :-1], corr_threshold=0.2, p_value_threshold=0.05, p_val="yes")
-    create_PyG_graph_from_df_cluster(train_df, mat, label_column="mutation_status",label="train",graphs_folder_ID="_threshold_0.2")
-    create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test",graphs_folder_ID="_threshold_0.2")
+    create_PyG_graph_from_df_cluster(train_df, mat, label_column="mutation_status",label="train",graphs_folder_ID="_threshold_05_pval")
+    create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test",graphs_folder_ID="_threshold_05_pval")
 
 if __name__ == "__main__":
     main()   

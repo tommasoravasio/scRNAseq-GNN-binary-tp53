@@ -19,8 +19,8 @@ class GCN(Module):
         super(GCN,self).__init__()
         self.conv1 = GCNConv(in_channels, hidden_channels)
         self.bn1=torch.nn.BatchNorm1d(hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, out_channels)
-        self.bn2=torch.nn.BatchNorm1d(out_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.bn2=torch.nn.BatchNorm1d(hidden_channels)
         self.lin = torch.nn.Linear(hidden_channels, out_channels)
         self.dropout = torch.nn.Dropout( p=dropout_rate )
 
@@ -86,7 +86,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     labels=torch.cat([data.y for data in train_PyG])
-    class_counts = torch.bincount(labels)
+    class_counts = torch.bincount(labels,minlength=2)
     class_weights = 1.0 / class_counts.float()
     class_weights = class_weights / class_weights.sum()
     criterion = CrossEntropyLoss(weight=class_weights.to(device)).to(device)
@@ -99,8 +99,8 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
 
         for epoch in range(1,epochs+1):
             loss = train(model, train_loader, optimizer, criterion, device)
-            train_acc = evaluate(model,train_loader,device, criterion,confusion_matrix=False)
-            test_acc = evaluate(model,test_loader,device,criterion,confusion_matrix=False)
+            train_acc , train_loss = evaluate(model,train_loader,device, criterion,confusion_matrix=False)
+            test_acc , test_loss= evaluate(model,test_loader,device,criterion,confusion_matrix=False)
             print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}")
             writer.writerow([epoch, loss, train_acc, test_acc])
     
@@ -119,7 +119,6 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     return model
 
 
-
 def load_graphs(path):
     graph_list = []
     for pt_file in sorted(Path(path).glob("*.pt")):
@@ -135,10 +134,10 @@ def load_graphs(path):
 
 def main():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs/train")
-    test_df_pyg = load_graphs("data/graphs/test")
+    train_df_pyg = load_graphs("data/graphs_c02_p005_noLCC/train")
+    test_df_pyg = load_graphs("data/graphs_c02_p005_noLCC/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 30, batch_size = 32)
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 10, batch_size = 16)
 
 if __name__ == "__main__":
     main()
