@@ -40,7 +40,7 @@ class GCN(Module):
         return x
 
 
-    def train(model,train_loader,optimizer,criterion,device):
+def train(model,train_loader,optimizer,criterion,device):
         model.train()
         total_loss = 0
         for batch in train_loader:
@@ -54,7 +54,7 @@ class GCN(Module):
         return total_loss / len(train_loader)
     
 
-    def evaluate(model,loader,device,criterion,confusion_matrix=False):
+def evaluate(model,loader,device,criterion,confusion_matrix=False):
         model.eval()
         y_true = []
         y_pred = []
