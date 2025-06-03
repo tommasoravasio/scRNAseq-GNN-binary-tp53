@@ -1,6 +1,7 @@
 import scanpy as sc
 import anndata as ad
 import mygene
+import pandas as pd
 
 def get_genes_symbols(adata, EnsIDs_column, new_column_name='gene_symbols_mapped'):
     """
@@ -56,3 +57,27 @@ def add_mutation_column(adata, df_mutation, cell_lines_column_name = "Sample_Nam
     print(f"Removed {initial_n - adata.n_obs} cells with unknown mutation status.")
     print(f"Number matching lines: {adata.n_obs}")
     print(f"Percentage of matching cell: {adata.n_obs / initial_n * 100:.2f}%")
+
+
+def main():
+    adata = ad.read_h5ad("data/Expression_Matrix_raw.h5ad")
+    df_mutation = pd.read_csv("data/Mutation_status.csv")
+    get_genes_symbols(adata,EnsIDs_column="Ensembl ID")
+    add_mutation_column(adata, df_mutation, cell_lines_column_name = "Sample_Name_cleaned", mutation_status_column="TP53status", new_obs_column="mutation_status")
+    #normalization and log transformation
+    adata.layers["raw_counts"] = adata.X.copy()
+    sc.pp.normalize_total(adata, target_sum=1e4)
+    sc.pp.log1p(adata) 
+    #combat for batch effects
+    adata.layers["pre_combat"] = adata.X.copy()
+    sc.pp.combat(adata, key="cell_line")
+    #HVG
+    adata.layers["pre_feature_selection"] = adata.X.copy()
+    sc.pp.highly_variable_genes(adata, min_mean=0.1, max_mean=3, min_disp=0.5 )
+    adata = adata[:, adata.var.highly_variable]
+    final_df = ad.AnnData.to_df(adata)
+    final_df["mutation_status"] = adata.obs["mutation_status"].values
+    final_df.to_csv("final_preprocessed_data_nuovo.csv")
+
+if __name__ == "__main__":
+    main()
