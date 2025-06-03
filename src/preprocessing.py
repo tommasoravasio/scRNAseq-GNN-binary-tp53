@@ -61,7 +61,7 @@ def add_mutation_column(adata, df_mutation, cell_lines_column_name = "Sample_Nam
 
 def main():
     adata = ad.read_h5ad("data/Expression_Matrix_raw.h5ad")
-    df_mutation = pd.read_csv("data/Mutation_status.csv")
+    df_mutation = pd.read_csv("data/Mutation_status_cleaned_column.csv")
     get_genes_symbols(adata,EnsIDs_column="Ensembl ID")
     add_mutation_column(adata, df_mutation, cell_lines_column_name = "Sample_Name_cleaned", mutation_status_column="TP53status", new_obs_column="mutation_status")
     #normalization and log transformation
@@ -77,7 +77,7 @@ def main():
     adata = adata[:, adata.var.highly_variable]
     final_df = ad.AnnData.to_df(adata)
     final_df["mutation_status"] = adata.obs["mutation_status"].values
-    final_df.to_csv("final_preprocessed_data_nuovo.csv")
+    final_df.to_csv("final_preprocessed_data_combat.csv")
 
 if __name__ == "__main__":
     main()
