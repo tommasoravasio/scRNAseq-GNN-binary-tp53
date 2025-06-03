@@ -15,22 +15,21 @@ import os
 def build_correlation_matrix(data, corr_threshold=0.1, p_value_threshold=0.05, p_val="yes"):
     """
     Creates the correlation matrix between the features of the dataset.
-    
-    If p_val == "yes": uses Spearman correlation + p-value threshold (slow, memory-heavy).
-    If p_val == "no" : uses rank + Pearson (Spearman approximation, no p-values, memory-efficient).
+    CAMBIATA RISPETTO A PRIMA, ORA:
+    p_val="yes" calcola anche p value
+    p_val="no" non calcola p value (test per histogram correlation)
     """
     
     if p_val == "yes":
-        # Full Spearman with p-values (expensive!)
+        #FILTRO SU P VALUE
         corr, p = scipy.stats.spearmanr(data)
         alpha = p_value_threshold / math.comb(data.shape[1], 2)
         aus = np.where((p <= alpha) & (np.abs(corr) >= corr_threshold), corr, 0)
     
     else:
-        # Memory-efficient version: rank + Pearson
-        ranked_data = np.apply_along_axis(scipy.stats.rankdata, axis=0, arr=data)
-        corr = np.corrcoef(ranked_data, rowvar=False)
-        aus = np.where(np.abs(corr) >= corr_threshold, corr, 0)
+        #NO FILTRO SU P VALUE
+        corr, p = scipy.stats.spearmanr(data)
+        aus = np.where((np.abs(corr) >= corr_threshold), corr, 0)
 
     np.fill_diagonal(aus, 0)
     
