@@ -14,3 +14,4 @@ data/
 notebooks/HVG3068_with_mut.csv
 notebooks/final_preprocessed_data_nuovo.csv
 model_paco.py
+notebooks/target.csv
