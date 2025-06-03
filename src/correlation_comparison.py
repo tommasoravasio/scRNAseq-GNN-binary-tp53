@@ -17,14 +17,14 @@ def plot_frequency_of_correlation_values(matrices, bins=50, alpha=0.5, filename=
     plt.figure(figsize=(10, 6))
     for label, mat in matrices.items():
         values = mat.flatten()
-        plt.hist(values, bins=bins, alpha=alpha, label=label, edgecolor='black', density=True)
+        plt.hist(values, bins=bins, alpha=alpha, label=label, edgecolor='black') #density=True
         mean_val = np.mean(values)
         plt.axvline(mean_val, linestyle='--', linewidth=2, label=f"Mean {label}: {mean_val:.2f}")
     plt.yscale('log')
     plt.legend()
     plt.title('Hist of Correlation Values')
     plt.xlabel('Correlation Value')
-    plt.ylabel('Density')
+    plt.ylabel('Absolute frequence')
     plt.grid(True)
     plt.savefig(filename)
     plt.close('all')
