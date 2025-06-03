@@ -97,9 +97,9 @@ def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", 
         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
         
 
-        #!!! Non dovremmo avere components separati ma cerca di capire
-        transform = LargestConnectedComponents(num_components=1)
-        data = transform(data)
+        # #!!! Non dovremmo avere components separati ma cerca di capire
+        # transform = LargestConnectedComponents(num_components=1)
+        # data = transform(data)
         graphs.append(data)
 
         #df_pyg.append(data)

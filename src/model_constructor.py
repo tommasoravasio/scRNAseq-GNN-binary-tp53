@@ -54,7 +54,7 @@ def train(model,train_loader,optimizer,criterion,device):
         return total_loss / len(train_loader)
     
 
-def evaluate(model,loader,device,criterion,confusion_matrix=False):
+def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
         model.eval()
         y_true = []
         y_pred = []
@@ -68,14 +68,14 @@ def evaluate(model,loader,device,criterion,confusion_matrix=False):
                 y_pred.extend(pred.cpu().numpy())
                 loss += criterion(out, batch.y).item()
         acc = accuracy_score(y_true, y_pred)
-        if confusion_matrix:
+        if compute_confusion_matrix:
             mat = confusion_matrix(y_true, y_pred)
             return acc, loss / len(loader), mat
         else:
             return acc, loss / len(loader)
 
 
-def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.5,lr= 0.001,
+def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
                 epochs=30):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
@@ -99,15 +99,15 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
 
         for epoch in range(1,epochs+1):
             loss = train(model, train_loader, optimizer, criterion, device)
-            train_acc , train_loss = evaluate(model,train_loader,device, criterion,confusion_matrix=False)
-            test_acc , test_loss= evaluate(model,test_loader,device,criterion,confusion_matrix=False)
+            train_acc , train_loss = evaluate(model,train_loader,device, criterion,compute_confusion_matrix=False)
+            test_acc , test_loss= evaluate(model,test_loader,device,criterion,compute_confusion_matrix=False)
             print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}")
             writer.writerow([epoch, loss, train_acc, test_acc])
     
     model_path = "gcn_model.pt"
     torch.save(model.state_dict(),model_path)
 
-    accuracy,avg_loss,mat = evaluate(model, test_loader, device, criterion, confusion_matrix=True)
+    accuracy,avg_loss,mat = evaluate(model, test_loader, device, criterion, compute_confusion_matrix=True )
     np.savetxt("results/confusion_matrix.csv", mat, delimiter=",", fmt="%d")
     summary_metrics = {
         "final_accuracy": accuracy,
