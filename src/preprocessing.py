@@ -69,8 +69,9 @@ def main():
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata) 
     #combat for batch effects
-    adata.layers["pre_combat"] = adata.X.copy()
-    sc.pp.combat(adata, key="cell_line")
+    adata.layers["pre_harmony"] = adata.X.copy()
+    sc.pp.pca(adata, n_comps=1000)
+    sc.external.pp.harmony_integrate(adata, key="cell_line")
     #HVG
     adata.layers["pre_feature_selection"] = adata.X.copy()
     sc.pp.highly_variable_genes(adata, min_mean=0.1, max_mean=3, min_disp=0.5 )
