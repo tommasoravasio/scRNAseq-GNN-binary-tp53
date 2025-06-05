@@ -149,7 +149,6 @@ def get_info_and_plot_graph(df_pyg):
 def save_dataset(train_pyg, test_pyg, name_train="train_reteunica.pt", name_test="test_reteunica.pt"):
     """
     Salva i dataset PyG in file .pt"""
-    #salva il dataset
     torch.save(train_pyg, 'train_reteunica.pt')
     torch.save(test_pyg, 'test_reteunica.pt')
 
@@ -158,8 +157,8 @@ def main():
     df = pd.read_csv("notebooks/final_preprocessed_data.csv", index_col=0)
     train_df, test_df =train_test_split(df, test_size=0.2, random_state=42)
     mat = build_correlation_matrix(train_df.iloc[:, :-1], corr_threshold=0.2, p_value_threshold=0.05, p_val="yes")
-    create_PyG_graph_from_df_cluster(train_df, mat, label_column="mutation_status",label="train",graphs_folder_ID="_threshold_05_pval")
-    create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test",graphs_folder_ID="_threshold_05_pval")
+    create_PyG_graph_from_df_cluster(train_df, mat, label_column="mutation_status",label="train",graphs_folder_ID="_L2reg")
+    create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test",graphs_folder_ID="_L2reg")
 
 if __name__ == "__main__":
     main()   
