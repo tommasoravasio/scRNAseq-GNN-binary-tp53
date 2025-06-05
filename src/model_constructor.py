@@ -11,8 +11,7 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 from torch.nn import Module, CrossEntropyLoss
 from torch_geometric.loader import DataLoader
 from pathlib import Path
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score
-
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 class GCN(Module):
     def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate):
@@ -84,7 +83,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
     labels=torch.cat([data.y for data in train_PyG])
     class_counts = torch.bincount(labels,minlength=2)
     class_weights = 1.0 / class_counts.float()
@@ -109,13 +108,38 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
 
     accuracy,avg_loss,mat = evaluate(model, test_loader, device, criterion, compute_confusion_matrix=True )
     np.savetxt(f"results/{ID_model}/confusion_matrix.csv", mat, delimiter=",", fmt="%d")
+
+    model.eval()
+    y_true = []
+    y_pred = []
+    y_prob = []
+    with torch.no_grad():
+        for batch in test_loader:
+            batch = batch.to(device)
+            out = model(batch.x, batch.edge_index,batch.batch)
+            probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy() 
+            preds = out.argmax(dim=1).cpu().numpy()
+            y_prob.extend(probs.cpu().numpy())
+            y_pred.extend(preds)
+            y_true.extend(batch.y.cpu().numpy())
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true,y_pred, zero_division=0)
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    try:
+        auc=  roc_auc_score(y_true,y_prob)
+    except ValueError:
+        auc = None
+
     summary_metrics = {
         "final_accuracy": accuracy,
         "final_loss": avg_loss,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "auc": auc,
         "number_of_epochs": epochs,
         "hidden_channels":hidden_channels,
         "dropout_rate":dropout_rate,
-        "learning_rate": lr,
         "learning_rate": lr,
         "ID_model": ID_model,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
@@ -140,10 +164,10 @@ def load_graphs(path):
 
 def main():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_c02_p005_noLCC/train")
-    test_df_pyg = load_graphs("data/graphs_c02_p005_noLCC/test")
+    train_df_pyg = load_graphs("data/graphs_L2reg/train")
+    test_df_pyg = load_graphs("data/graphs_L2reg/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline")
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "L2reg")
 
 if __name__ == "__main__":
     main()
