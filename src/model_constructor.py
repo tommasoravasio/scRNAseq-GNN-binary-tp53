@@ -76,7 +76,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30):
+                epochs=30, ID_model="baseline"):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -90,9 +90,9 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     class_weights = 1.0 / class_counts.float()
     class_weights = class_weights / class_weights.sum()
     criterion = CrossEntropyLoss(weight=class_weights.to(device)).to(device)
-    os.makedirs("results",exist_ok=True)
+    os.makedirs(f"results/{ID_model}",exist_ok=True)
     
-    log_path = "training_log.csv"
+    log_path = f"results/{ID_model}/training_log.csv"
     with open(log_path,mode="w",newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Epoch", "Loss", "Train Accuracy", "Test Accuracy"])
@@ -104,16 +104,22 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
             print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}")
             writer.writerow([epoch, loss, train_acc, test_acc])
     
-    model_path = "gcn_model.pt"
+    model_path = f"results/{ID_model}/gcn_model.pt"
     torch.save(model.state_dict(),model_path)
 
     accuracy,avg_loss,mat = evaluate(model, test_loader, device, criterion, compute_confusion_matrix=True )
-    np.savetxt("results/confusion_matrix.csv", mat, delimiter=",", fmt="%d")
+    np.savetxt(f"results/{ID_model}/confusion_matrix.csv", mat, delimiter=",", fmt="%d")
     summary_metrics = {
         "final_accuracy": accuracy,
         "final_loss": avg_loss,
+        "number_of_epochs": epochs,
+        "hidden_channels":hidden_channels,
+        "dropout_rate":dropout_rate,
+        "learning_rate": lr,
+        "learning_rate": lr,
+        "ID_model": ID_model,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-    with open("results/summary_metrics.json", "w") as f:
+    with open(f"results/{ID_model}/summary_metrics.json", "w") as f:
         json.dump(summary_metrics, f, indent=4)
 
     return model
@@ -137,7 +143,7 @@ def main():
     train_df_pyg = load_graphs("data/graphs_c02_p005_noLCC/train")
     test_df_pyg = load_graphs("data/graphs_c02_p005_noLCC/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 10, batch_size = 16)
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline")
 
 if __name__ == "__main__":
     main()
