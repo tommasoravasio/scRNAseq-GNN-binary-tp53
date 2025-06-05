@@ -83,12 +83,12 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     labels=torch.cat([data.y for data in train_PyG])
     class_counts = torch.bincount(labels,minlength=2)
     class_weights = 1.0 / class_counts.float()
     class_weights = class_weights / class_weights.sum()
-    criterion = CrossEntropyLoss(weight=class_weights.to(device)).to(device)
+    criterion = CrossEntropyLoss().to(device)    #weight=class_weights.to(device)
     os.makedirs(f"results/{ID_model}",exist_ok=True)
     
     log_path = f"results/{ID_model}/training_log.csv"
@@ -164,10 +164,10 @@ def load_graphs(path):
 
 def main():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_L2reg/train")
-    test_df_pyg = load_graphs("data/graphs_L2reg/test")
+    train_df_pyg = load_graphs("data/graphs_baseline/train")
+    test_df_pyg = load_graphs("data/graphs_baseline/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "L2reg")
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "NoWeight")
 
 if __name__ == "__main__":
     main()
