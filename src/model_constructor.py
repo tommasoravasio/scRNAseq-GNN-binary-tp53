@@ -119,7 +119,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
             out = model(batch.x, batch.edge_index,batch.batch)
             probs = torch.softmax(out, dim=1)[:, 1].cpu().numpy() 
             preds = out.argmax(dim=1).cpu().numpy()
-            y_prob.extend(probs.cpu().numpy())
+            y_prob.extend(probs if isinstance(probs, np.ndarray) else probs.cpu().numpy())
             y_pred.extend(preds)
             y_true.extend(batch.y.cpu().numpy())
     precision = precision_score(y_true, y_pred, zero_division=0)
@@ -164,10 +164,10 @@ def load_graphs(path):
 
 def main():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_baseline/train")
-    test_df_pyg = load_graphs("data/graphs_baseline/test")
+    train_df_pyg = load_graphs("data/graphs_target/train")
+    test_df_pyg = load_graphs("data/graphs_target/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "NoWeight")
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "target")
 
 if __name__ == "__main__":
     main()
