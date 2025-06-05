@@ -92,7 +92,7 @@ def create_PyG_graph_from_df_cluster(df,matrix, label_column="mutation_status", 
 
         #edge_index = tg_utils.dense_to_sparse(torch.tensor(matrix, dtype=torch.float32))[0]
         x = torch.tensor(obs[:-1],dtype=torch.float32).view(-1,1)
-        y = int(getattr(obs, label_column) == "MUT") #"mut":1 , "wt":0
+        y = int(getattr(obs, label_column) == "MUT") #"MUT":1 , "WT":0
         data = Data(x=x, edge_index=edge_index, y=torch.tensor([y], dtype=torch.long))
         
 
