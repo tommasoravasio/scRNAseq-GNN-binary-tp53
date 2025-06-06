@@ -94,14 +94,14 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     log_path = f"results/{ID_model}/training_log.csv"
     with open(log_path,mode="w",newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Epoch", "Loss", "Train Accuracy", "Test Accuracy"])
+        writer.writerow(["Epoch", "Loss", "Train Accuracy", "Test Accuracy", "Test Loss"])
 
         for epoch in range(1,epochs+1):
             loss = train(model, train_loader, optimizer, criterion, device)
             train_acc , train_loss = evaluate(model,train_loader,device, criterion,compute_confusion_matrix=False)
             test_acc , test_loss= evaluate(model,test_loader,device,criterion,compute_confusion_matrix=False)
-            print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}")
-            writer.writerow([epoch, loss, train_acc, test_acc])
+            print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f} | Test Loss: {test_loss:.4f}" )
+            writer.writerow([epoch, loss, train_acc, test_acc, test_loss])
     
     model_path = f"results/{ID_model}/gcn_model.pt"
     torch.save(model.state_dict(),model_path)
@@ -164,10 +164,10 @@ def load_graphs(path):
 
 def main():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_target/train")
-    test_df_pyg = load_graphs("data/graphs_target/test")
+    train_df_pyg = load_graphs("data/graphs_smalltest/train")
+    test_df_pyg = load_graphs("data/graphs_smalltest/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "target")
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "smalltest")
 
 if __name__ == "__main__":
     main()
