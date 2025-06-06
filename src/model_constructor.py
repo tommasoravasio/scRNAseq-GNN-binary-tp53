@@ -13,6 +13,8 @@ from torch_geometric.loader import DataLoader
 from pathlib import Path
 from torch_geometric.nn import GraphNorm
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+import optuna
+
 
 class GCN(Module):
     def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False):
@@ -195,12 +197,54 @@ def load_graphs(path):
     return graph_list
 
 
-def main():
-    # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_baseline/train")
-    test_df_pyg = load_graphs("data/graphs_baseline/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW",use_adamW=True)
+def objective(trial):
+    # Sample hyperparameters
+    hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
+    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+    lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+
+    # Carica i dati
+    train_df_pyg = load_graphs("data/graphs_target/train")
+    test_df_pyg = load_graphs("data/graphs_target/test")
+
+    # Traina il modello
+    model = train_model(
+        train_PyG=train_df_pyg,
+        test_PyG=test_df_pyg,
+        hidden_channels=hidden_channels,
+        dropout_rate=dropout_rate,
+        lr=lr,
+        epochs=30,
+        batch_size=16,
+        ID_model=f"optuna_{trial.number}"
+    )
+
+    # Carica le metriche
+    with open(f"results/optuna_{trial.number}/summary_metrics.json") as f:
+        metrics = json.load(f)
+
+    return metrics["f1_score"]  # o "auc" se preferisci
+
+
+def main():
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=20)
+
+    print("Best trial:")
+    trial = study.best_trial
+    print(f"F1: {trial.value}")
+    print("Params:")
+    for key, value in trial.params.items():
+        print(f"  {key}: {value}")
+
+
+# def main():
+#     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
+#     train_df_pyg = load_graphs("data/graphs_target/train")
+#     test_df_pyg = load_graphs("data/graphs_target/test")
+
+#     model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "target")
 
 if __name__ == "__main__":
     main()
