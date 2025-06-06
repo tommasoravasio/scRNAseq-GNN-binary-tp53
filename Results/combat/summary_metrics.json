@@ -1,0 +1,14 @@
+{
+    "final_accuracy": 0.29122578544685007,
+    "final_loss": 0.7781539362234374,
+    "precision": 0.9554896142433235,
+    "recall": 0.069083887577773,
+    "f1_score": 0.12885154061624648,
+    "auc": 0.5294812150439472,
+    "number_of_epochs": 50,
+    "hidden_channels": 64,
+    "dropout_rate": 0.2,
+    "learning_rate": 0.0001,
+    "ID_model": "combat",
+    "timestamp": "2025-06-05 13:09:09"
+}

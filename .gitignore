@@ -17,3 +17,5 @@ model_paco.py
 notebooks/target.csv
 notebooks/final_preprocessed_data_combat.csv
 notebooks/final_preprocessed_data_harmony.csv
+notebooks/df_test_subset.csv
+notebooks/df_train_subset.csv

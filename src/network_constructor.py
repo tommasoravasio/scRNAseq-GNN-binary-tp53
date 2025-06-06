@@ -161,7 +161,7 @@ def main():
     create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test",graphs_folder_ID="_target")
 
 if __name__ == "__main__":
-    main()   
+    main()  
 
 
 
