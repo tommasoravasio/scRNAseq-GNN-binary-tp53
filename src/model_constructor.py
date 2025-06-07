@@ -75,7 +75,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline"):
+                epochs=30, ID_model="baseline",loss_weight=False):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -88,20 +88,46 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     class_counts = torch.bincount(labels,minlength=2)
     class_weights = 1.0 / class_counts.float()
     class_weights = class_weights / class_weights.sum()
-    criterion = CrossEntropyLoss().to(device)    #weight=class_weights.to(device)
+    if loss_weight:
+        criterion = CrossEntropyLoss(weight=class_weights.to(device)).to(device)
+    else:
+        criterion = CrossEntropyLoss().to(device)
     os.makedirs(f"results/{ID_model}",exist_ok=True)
     
     log_path = f"results/{ID_model}/training_log.csv"
     with open(log_path,mode="w",newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Epoch", "Loss", "Train Accuracy", "Test Accuracy", "Test Loss"])
+        writer.writerow(["Epoch", "Loss", "Train Accuracy", "Train F1", "Test Accuracy", "Test F1", "Test Loss"])
+
 
         for epoch in range(1,epochs+1):
             loss = train(model, train_loader, optimizer, criterion, device)
             train_acc , train_loss = evaluate(model,train_loader,device, criterion,compute_confusion_matrix=False)
             test_acc , test_loss= evaluate(model,test_loader,device,criterion,compute_confusion_matrix=False)
-            print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f} | Test Loss: {test_loss:.4f}" )
-            writer.writerow([epoch, loss, train_acc, test_acc, test_loss])
+            # Calcola F1 train
+            model.eval()
+            y_true_train, y_pred_train = [], []
+            y_true_test, y_pred_test = [], []
+
+            with torch.no_grad():
+                for batch in train_loader:
+                    batch = batch.to(device)
+                    out = model(batch.x, batch.edge_index, batch.batch)
+                    preds = out.argmax(dim=1).cpu().numpy()
+                    y_pred_train.extend(preds)
+                    y_true_train.extend(batch.y.cpu().numpy())
+
+                for batch in test_loader:
+                    batch = batch.to(device)
+                    out = model(batch.x, batch.edge_index, batch.batch)
+                    preds = out.argmax(dim=1).cpu().numpy()
+                    y_pred_test.extend(preds)
+                    y_true_test.extend(batch.y.cpu().numpy())
+
+            train_f1 = f1_score(y_true_train, y_pred_train, zero_division=0)
+            test_f1 = f1_score(y_true_test, y_pred_test, zero_division=0)
+            print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Train F1: {train_f1:.4f} | Test Acc: {test_acc:.4f} | Test F1: {test_f1:.4f} | Test Loss: {test_loss:.4f}")
+            writer.writerow([epoch, loss, train_acc, train_f1, test_acc, test_f1, test_loss])
     
     model_path = f"results/{ID_model}/gcn_model.pt"
     torch.save(model.state_dict(),model_path)
