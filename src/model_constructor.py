@@ -11,26 +11,30 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 from torch.nn import Module, CrossEntropyLoss
 from torch_geometric.loader import DataLoader
 from pathlib import Path
+from torch_geometric.nn import GraphNorm
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 class GCN(Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate):
+    def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False):
         super(GCN,self).__init__()
+        self.use_graphnorm = use_graphnorm
+
         self.conv1 = GCNConv(in_channels, hidden_channels)
-        self.bn1=torch.nn.BatchNorm1d(hidden_channels)
+        self.bn1=torch.nn.GraphNorm(hidden_channels) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels)
         self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.bn2=torch.nn.BatchNorm1d(hidden_channels)
+        self.bn2=torch.nn.GraphNorm(hidden_channels) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels)
         self.lin = torch.nn.Linear(hidden_channels, out_channels)
         self.dropout = torch.nn.Dropout( p=dropout_rate )
+        
 
     def forward(self, x, edge_index,batch ):
         x=self.conv1(x, edge_index)
-        x=self.bn1(x)
+        x=self.bn1(x,batch) if self.use_graphnorm else self.bn1(x)
         x=F.relu(x)
         x=self.dropout(x)
 
         x=self.conv2(x,edge_index)
-        x=self.bn2(x)
+        x=self.bn2(x,batch) if self.use_graphnorm else self.bn2(x)
         x=F.relu(x)
         x=self.dropout(x)
 
@@ -75,13 +79,13 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline",loss_weight=False):
+                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate).to(device)
+    model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     labels=torch.cat([data.y for data in train_PyG])
@@ -190,10 +194,10 @@ def load_graphs(path):
 
 def main():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_smalltest/train")
-    test_df_pyg = load_graphs("data/graphs_smalltest/test")
+    train_df_pyg = load_graphs("data/graphs_baseline/train")
+    test_df_pyg = load_graphs("data/graphs_baseline/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "smalltest")
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "GraphNorm",use_graphnorm=True)
 
 if __name__ == "__main__":
     main()
