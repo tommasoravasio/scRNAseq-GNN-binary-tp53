@@ -20,9 +20,9 @@ class GCN(Module):
         self.use_graphnorm = use_graphnorm
 
         self.conv1 = GCNConv(in_channels, hidden_channels)
-        self.bn1=torch.nn.GraphNorm(hidden_channels) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels)
+        self.bn1=GraphNorm(hidden_channels) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels)
         self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.bn2=torch.nn.GraphNorm(hidden_channels) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels)
+        self.bn2=GraphNorm(hidden_channels) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels)
         self.lin = torch.nn.Linear(hidden_channels, out_channels)
         self.dropout = torch.nn.Dropout( p=dropout_rate )
         
@@ -79,7 +79,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False):
+                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -87,7 +87,10 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm).to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    if use_adamW:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     labels=torch.cat([data.y for data in train_PyG])
     class_counts = torch.bincount(labels,minlength=2)
     class_weights = 1.0 / class_counts.float()
@@ -197,7 +200,7 @@ def main():
     train_df_pyg = load_graphs("data/graphs_baseline/train")
     test_df_pyg = load_graphs("data/graphs_baseline/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "GraphNorm",use_graphnorm=True)
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW",use_adamW=True)
 
 if __name__ == "__main__":
     main()
