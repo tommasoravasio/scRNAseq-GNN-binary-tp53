@@ -12,6 +12,7 @@ from torch.nn import Module, CrossEntropyLoss
 from torch_geometric.loader import DataLoader
 from pathlib import Path
 from torch_geometric.nn import GraphNorm
+from torch_geometric.nn import GATConv
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 class GCN(Module):
@@ -41,6 +42,43 @@ class GCN(Module):
         x= global_mean_pool(x, batch)
         x= self.lin(x)
         return x
+
+
+
+
+
+class GAT(Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False, heads=1):
+        super(GAT,self).__init__()
+        self.use_graphnorm = use_graphnorm
+        self.heads = heads
+
+        self.conv1 = GATConv(in_channels, hidden_channels, heads=heads, concat=True)
+        self.bn1 = GraphNorm(hidden_channels * heads) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels * heads)
+
+        self.conv2 = GATConv(hidden_channels * heads, hidden_channels, heads=heads, concat=True)
+        self.bn2 = GraphNorm(hidden_channels * heads) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels * heads)
+
+        self.lin = torch.nn.Linear(hidden_channels * heads, out_channels)
+        self.dropout = torch.nn.Dropout(p=dropout_rate)
+
+    def forward(self, x, edge_index, batch):
+        x = self.conv1(x, edge_index)
+        x = self.bn1(x, batch) if self.use_graphnorm else self.bn1(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+
+        x = self.conv2(x, edge_index)
+        x = self.bn2(x, batch) if self.use_graphnorm else self.bn2(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+
+        x = global_mean_pool(x, batch)
+        x = self.lin(x)
+        return x
+
+
+
 
 
 def train(model,train_loader,optimizer,criterion,device):
@@ -79,14 +117,20 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False):
+                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False,
+                model_type="gcn",heads=1):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm).to(device)
-
+    if model_type == "gcn":
+        model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm).to(device)
+    elif model_type=="gat":
+        model = GAT(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm, heads=heads).to(device)
+    else:
+        raise KeyError("model_type does not exist, has to be either \"gcn\" (default value) or \"gat\" ")
+    
     if use_adamW:
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     else:
@@ -99,9 +143,10 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
         criterion = CrossEntropyLoss(weight=class_weights.to(device)).to(device)
     else:
         criterion = CrossEntropyLoss().to(device)
-    os.makedirs(f"results/{ID_model}",exist_ok=True)
     
-    log_path = f"results/{ID_model}/training_log.csv"
+    results_dir = f"{model_type}_results/{ID_model}"
+    os.makedirs(results_dir, exist_ok=True)
+    log_path = f"{results_dir}/training_log.csv"
     with open(log_path,mode="w",newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Epoch", "Loss", "Train Accuracy", "Train F1", "Test Accuracy", "Test F1", "Test Loss"])
@@ -136,11 +181,11 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
             print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Train F1: {train_f1:.4f} | Test Acc: {test_acc:.4f} | Test F1: {test_f1:.4f} | Test Loss: {test_loss:.4f}")
             writer.writerow([epoch, loss, train_acc, train_f1, test_acc, test_f1, test_loss])
     
-    model_path = f"results/{ID_model}/gcn_model.pt"
-    torch.save(model.state_dict(),model_path)
+    model_path = f"{results_dir}/{model_type}_model.pt"
+    torch.save(model.state_dict(), model_path)
 
     accuracy,avg_loss,mat = evaluate(model, test_loader, device, criterion, compute_confusion_matrix=True )
-    np.savetxt(f"results/{ID_model}/confusion_matrix.csv", mat, delimiter=",", fmt="%d")
+    np.savetxt(f"{results_dir}/confusion_matrix.csv", mat, delimiter=",", fmt="%d")
 
     model.eval()
     y_true = []
@@ -176,7 +221,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
         "learning_rate": lr,
         "ID_model": ID_model,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-    with open(f"results/{ID_model}/summary_metrics.json", "w") as f:
+    with open(f"{results_dir}/summary_metrics.json", "w") as f:
         json.dump(summary_metrics, f, indent=4)
 
     return model
