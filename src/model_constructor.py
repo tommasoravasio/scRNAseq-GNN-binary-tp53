@@ -81,7 +81,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False):
+                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, weight_decay=1e-4):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -90,7 +90,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
     model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm).to(device)
 
     if use_adamW:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay )
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     labels=torch.cat([data.y for data in train_PyG])
@@ -199,35 +199,35 @@ def load_graphs(path):
 
 
 def objective(trial):
-    # Sample hyperparameters
     hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
 
-    # Carica i dati
+    weight_decay = trial.suggest_float("weight_decay", 0.0, 1e-3, log=True)
+
     train_df_pyg = load_graphs("data/graphs_target/train")
     test_df_pyg = load_graphs("data/graphs_target/test")
 
-    # Traina il modello
     model = train_model(
         train_PyG=train_df_pyg,
         test_PyG=test_df_pyg,
         hidden_channels=hidden_channels,
         dropout_rate=dropout_rate,
         lr=lr,
-        epochs=30,
+        use_adamw=True,
+        weight_decay=weight_decay,
+        epochs=40,
         batch_size=16,
         ID_model=f"optuna_{trial.number}"
     )
 
-    # Carica le metriche
     with open(f"results/optuna_{trial.number}/summary_metrics.json") as f:
         metrics = json.load(f)
 
-    return metrics["f1_score"]  # o "auc" se preferisci
+    return metrics["f1_score"]
 
 
-def main():
+def main_optuna():
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=20)
 
@@ -247,7 +247,7 @@ def main():
 #     model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "target")
 
 if __name__ == "__main__":
-    main()
+    main_optuna()
 
 
 
