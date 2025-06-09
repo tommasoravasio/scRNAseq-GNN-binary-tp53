@@ -37,7 +37,7 @@ def main():
     #BASELINE
     train_df_pyg = model_constructor.load_graphs("data/graphs_baseline/train")
     test_df_pyg = model_constructor.load_graphs("data/graphs_baseline/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline", odel_type="gat")
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline", model_type="gat")
 
    #Combat
     train_df_pyg = model_constructor.load_graphs("data/graphs_combat/train")
