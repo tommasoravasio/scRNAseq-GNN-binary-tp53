@@ -14,6 +14,9 @@ from pathlib import Path
 from torch_geometric.nn import GraphNorm
 from torch_geometric.nn import GATConv
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+import optuna
+import argparse
+
 
 class GCN(Module):
     def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False):
@@ -117,8 +120,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False,
-                model_type="gcn",heads=1):
+                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, weight_decay=1e-4, model_type="gcn",heads=1):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -132,7 +134,7 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
         raise KeyError("model_type does not exist, has to be either \"gcn\" (default value) or \"gat\" ")
     
     if use_adamW:
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay )
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     labels=torch.cat([data.y for data in train_PyG])
@@ -240,15 +242,63 @@ def load_graphs(path):
     return graph_list
 
 
-def main():
-    # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_baseline/train")
-    test_df_pyg = load_graphs("data/graphs_baseline/test")
 
+def objective(trial):
+    hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
+    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+    lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+
+    weight_decay = trial.suggest_float("weight_decay", 0.0, 1e-4, log=True)
+
+    train_df_pyg = load_graphs("data/graphs_target/train")
+    test_df_pyg = load_graphs("data/graphs_target/test")
+
+    model = train_model(
+        train_PyG=train_df_pyg,
+        test_PyG=test_df_pyg,
+        hidden_channels=hidden_channels,
+        dropout_rate=dropout_rate,
+        lr=lr,
+        use_adamw=True,
+        weight_decay=weight_decay,
+        epochs=40,
+        batch_size=16,
+        ID_model=f"optuna_{trial.number}"
+    )
+
+    with open(f"results/optuna_{trial.number}/summary_metrics.json") as f:
+        metrics = json.load(f)
+
+    return metrics["f1_score"]
+
+
+def main_optuna():
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=20)
+
+    print("Best trial:")
+    trial = study.best_trial
+    print(f"F1: {trial.value}")
+    print("Params:")
+    for key, value in trial.params.items():
+        print(f"  {key}: {value}")
+
+
+def main_baseline():
+    # IMPORTA GRAFI COME train_df_pyg test_df_pyg
+    train_df_pyg = load_graphs("data/graphs_target/train")
+    test_df_pyg = load_graphs("data/graphs_target/test")
     model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat", use_graphnorm=False)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fine_tuning", choices=["yes","no"],default="no")
+    args=parser.parse_args()
+
+    if args.fine_tuning == "yes":
+        main_optuna()
+    else:
+        main_baseline()
 
 
 
