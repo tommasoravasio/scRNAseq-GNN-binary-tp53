@@ -288,7 +288,7 @@ def main_baseline():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
     train_df_pyg = load_graphs("data/graphs_target/train")
     test_df_pyg = load_graphs("data/graphs_target/test")
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat", use_graphnorm=False)
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat", use_graphnorm=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
