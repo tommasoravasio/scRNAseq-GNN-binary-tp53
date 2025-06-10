@@ -245,7 +245,7 @@ def main():
     train_df_pyg = load_graphs("data/graphs_baseline/train")
     test_df_pyg = load_graphs("data/graphs_baseline/test")
 
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "GraphNorm", use_adamW=False, model_type="gat", use_graphnorm=True)
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat", use_graphnorm=False)
 
 if __name__ == "__main__":
     main()
