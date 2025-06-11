@@ -247,8 +247,8 @@ def objective(trial):
     hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
-
-    weight_decay = trial.suggest_float("weight_decay", 0.0, 1e-4, log=True)
+    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
+    heads = trial.suggest_categorical("heads", [1, 2, 4, 8])
 
     train_df_pyg = load_graphs("data/graphs_target/train")
     test_df_pyg = load_graphs("data/graphs_target/test")
@@ -263,7 +263,10 @@ def objective(trial):
         weight_decay=weight_decay,
         epochs=40,
         batch_size=16,
-        ID_model=f"optuna_{trial.number}"
+        ID_model=f"optuna_{trial.number}",
+        model_type = "gat",
+        heads=heads,
+        use_graphnorm=True
     )
 
     with open(f"results/optuna_{trial.number}/summary_metrics.json") as f:
