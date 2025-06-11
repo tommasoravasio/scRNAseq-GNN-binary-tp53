@@ -259,7 +259,7 @@ def objective(trial):
         hidden_channels=hidden_channels,
         dropout_rate=dropout_rate,
         lr=lr,
-        use_adamw=True,
+        use_adamW=True,
         weight_decay=weight_decay,
         epochs=40,
         batch_size=16,
