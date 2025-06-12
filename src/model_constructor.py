@@ -163,6 +163,12 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
     with open(log_path,mode="w",newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Epoch", "Loss", "Train Accuracy", "Train F1", "Test Accuracy", "Test F1", "Test Loss"])
+        
+        #Inizializza variabili per early stopping
+        patience = 10  
+        best_f1 = 0
+        epochs_no_improve = 0
+        best_model_state = None
 
 
         for epoch in range(1,epochs+1):
@@ -193,8 +199,19 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
             test_f1 = f1_score(y_true_test, y_pred_test, zero_division=0)
             print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Train F1: {train_f1:.4f} | Test Acc: {test_acc:.4f} | Test F1: {test_f1:.4f} | Test Loss: {test_loss:.4f}")
             writer.writerow([epoch, loss, train_acc, train_f1, test_acc, test_f1, test_loss])
-    
 
+            if test_f1 > best_f1:
+                best_f1 = test_f1
+                epochs_no_improve = 0
+                best_model_state = model.state_dict()
+            else:
+                epochs_no_improve += 1
+                if epochs_no_improve >= patience:
+                    print(f"Early stopping triggered at epoch {epoch}")
+                    break
+    
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
     model_path = f"{results_dir}/{model_type}_model.pt"
     torch.save(model.state_dict(), model_path)
     accuracy,avg_loss,mat = evaluate(model, test_loader, device, criterion, compute_confusion_matrix=True )
@@ -236,6 +253,8 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
         "heads": heads,
         "use_graphnorm": use_graphnorm,
         "use_third_layer": use_third_layer,
+        "best_epoch": epoch - epochs_no_improve,
+        "best_f1": best_f1,
         "ID_model": ID_model,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     with open(f"{results_dir}/summary_metrics.json", "w") as f:
@@ -312,6 +331,77 @@ def main_baseline():
     test_df_pyg = load_graphs("data/graphs_target/test")
     model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat", use_graphnorm=True)
 
+# TESTING
+def test_run_baseline():
+    train_df_pyg_big = load_graphs("data/graphs_baseline/train")
+    test_df_pyg_big = load_graphs("data/graphs_baseline/test")
+    train_df_pyg_small = train_df_pyg_big[:5]
+    test_df_pyg_small = test_df_pyg_big[:5]
+    
+    model = train_model(
+        train_PyG=train_df_pyg_small,
+        test_PyG=test_df_pyg_small,
+        hidden_channels=32,
+        dropout_rate=0.3,
+        lr=0.001,
+        use_adamW=True,
+        weight_decay=1e-4,
+        loss_weight=False,
+        epochs=2,
+        batch_size=2,
+        ID_model="test_run",
+        model_type="gat",
+        heads=2,
+        use_graphnorm=True,
+        use_third_layer=False
+    )
+    print("Test run completed successfully.")
+
+
+def main_optuna_test():
+    train_df_pyg_big = load_graphs("data/graphs_baseline/train")
+    test_df_pyg_big = load_graphs("data/graphs_baseline/test")
+    train_df_pyg_small = train_df_pyg_big[:5]
+    test_df_pyg_small = test_df_pyg_big[:5]
+
+    def objective_test(trial):
+        hidden_channels = trial.suggest_categorical("hidden_channels", [32])
+        dropout_rate = trial.suggest_float("dropout_rate", 0.2, 0.3)
+        lr = trial.suggest_float("lr", 1e-4, 1e-3, log=True)
+        weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-4, log=True)
+        heads = trial.suggest_categorical("heads", [2])
+        loss_weight = trial.suggest_categorical("loss_weight", [False])
+        use_third_layer = trial.suggest_categorical("use_third_layer", [False])
+
+        model = train_model(
+            train_PyG=train_df_pyg_small,
+            test_PyG=test_df_pyg_small,
+            hidden_channels=hidden_channels,
+            dropout_rate=dropout_rate,
+            lr=lr,
+            use_adamW=True,
+            weight_decay=weight_decay,
+            loss_weight=loss_weight,
+            epochs=2,
+            batch_size=2,
+            ID_model=f"optuna_test_{trial.number}",
+            model_type="gat",
+            heads=heads,
+            use_graphnorm=True,
+            use_third_layer=use_third_layer
+        )
+
+        with open(f"gat_results/optuna_test_{trial.number}/summary_metrics.json") as f:
+            metrics = json.load(f)
+
+        return metrics["f1_score"]
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective_test, n_trials=1)
+
+    print("Optuna test run completed successfully.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--fine_tuning", choices=["yes","no"],default="no")
@@ -321,6 +411,10 @@ if __name__ == "__main__":
         main_optuna()
     else:
         main_baseline()
+
+    # #FOR TESTING
+    # test_run_baseline()
+    # main_optuna_test()
 
 
 
