@@ -119,7 +119,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
             return acc, loss / len(loader)
 
 
-def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
+def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
                 epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, weight_decay=1e-4, model_type="gcn",heads=1):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
@@ -183,9 +183,9 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
             print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Train F1: {train_f1:.4f} | Test Acc: {test_acc:.4f} | Test F1: {test_f1:.4f} | Test Loss: {test_loss:.4f}")
             writer.writerow([epoch, loss, train_acc, train_f1, test_acc, test_f1, test_loss])
     
+
     model_path = f"{results_dir}/{model_type}_model.pt"
     torch.save(model.state_dict(), model_path)
-
     accuracy,avg_loss,mat = evaluate(model, test_loader, device, criterion, compute_confusion_matrix=True )
     np.savetxt(f"{results_dir}/confusion_matrix.csv", mat, delimiter=",", fmt="%d")
 
@@ -221,6 +221,8 @@ def train_model(train_PyG, test_PyG,batch_size=32, hidden_channels=64, dropout_r
         "hidden_channels":hidden_channels,
         "dropout_rate":dropout_rate,
         "learning_rate": lr,
+        "weight_decay": weight_decay,
+        "heads": heads,
         "ID_model": ID_model,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     with open(f"{results_dir}/summary_metrics.json", "w") as f:
@@ -248,7 +250,7 @@ def objective(trial):
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
-    heads = trial.suggest_categorical("heads", [1, 2, 4, 8])
+    heads = trial.suggest_categorical("heads", [1, 2, 4, 8, 16])
 
     train_df_pyg = load_graphs("data/graphs_target/train")
     test_df_pyg = load_graphs("data/graphs_target/test")
@@ -261,7 +263,7 @@ def objective(trial):
         lr=lr,
         use_adamW=True,
         weight_decay=weight_decay,
-        epochs=40,
+        epochs=100,
         batch_size=16,
         ID_model=f"optuna_{trial.number}",
         model_type = "gat",
@@ -269,7 +271,7 @@ def objective(trial):
         use_graphnorm=True
     )
 
-    with open(f"results/optuna_{trial.number}/summary_metrics.json") as f:
+    with open(f"gat_results/optuna_{trial.number}/summary_metrics.json") as f:
         metrics = json.load(f)
 
     return metrics["f1_score"]
