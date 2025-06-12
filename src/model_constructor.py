@@ -51,16 +51,21 @@ class GCN(Module):
 
 
 class GAT(Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False, heads=1):
+    def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False, heads=1,use_third_layer=False):
         super(GAT,self).__init__()
         self.use_graphnorm = use_graphnorm
         self.heads = heads
+        self.use_third_layer = use_third_layer
 
         self.conv1 = GATConv(in_channels, hidden_channels, heads=heads, concat=True)
         self.bn1 = GraphNorm(hidden_channels * heads) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels * heads)
 
         self.conv2 = GATConv(hidden_channels * heads, hidden_channels, heads=heads, concat=True)
         self.bn2 = GraphNorm(hidden_channels * heads) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels * heads)
+
+        if use_third_layer:
+            self.conv3 = GATConv(hidden_channels * heads, hidden_channels, heads=heads, concat=True)
+            self.bn3 = GraphNorm(hidden_channels * heads) if use_graphnorm else torch.nn.BatchNorm1d(hidden_channels * heads)
 
         self.lin = torch.nn.Linear(hidden_channels * heads, out_channels)
         self.dropout = torch.nn.Dropout(p=dropout_rate)
@@ -75,6 +80,12 @@ class GAT(Module):
         x = self.bn2(x, batch) if self.use_graphnorm else self.bn2(x)
         x = F.relu(x)
         x = self.dropout(x)
+
+        if self.use_third_layer:
+            x = self.conv3(x, edge_index)
+            x = self.bn3(x, batch) if self.use_graphnorm else self.bn3(x)
+            x = F.relu(x)
+            x = self.dropout(x)
 
         x = global_mean_pool(x, batch)
         x = self.lin(x)
@@ -120,7 +131,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, weight_decay=1e-4, model_type="gcn",heads=1):
+                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, weight_decay=1e-4, model_type="gcn",heads=1, use_third_layer=False):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -129,7 +140,7 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
     if model_type == "gcn":
         model = GCN(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm).to(device)
     elif model_type=="gat":
-        model = GAT(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm, heads=heads).to(device)
+        model = GAT(in_channels=train_PyG[0].x.shape[1], hidden_channels=hidden_channels, out_channels=2,dropout_rate=dropout_rate, use_graphnorm=use_graphnorm, heads=heads, use_third_layer=use_third_layer).to(device)
     else:
         raise KeyError("model_type does not exist, has to be either \"gcn\" (default value) or \"gat\" ")
     
@@ -223,6 +234,8 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
         "learning_rate": lr,
         "weight_decay": weight_decay,
         "heads": heads,
+        "use_graphnorm": use_graphnorm,
+        "use_third_layer": use_third_layer,
         "ID_model": ID_model,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     with open(f"{results_dir}/summary_metrics.json", "w") as f:
@@ -251,6 +264,8 @@ def objective(trial):
     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
     heads = trial.suggest_categorical("heads", [1, 2, 4, 8, 16])
+    loss_weight = trial.suggest_categorical("loss_weight", [True, False])
+    use_third_layer = trial.suggest_categorical("use_third_layer", [True, False])
 
     train_df_pyg = load_graphs("data/graphs_target/train")
     test_df_pyg = load_graphs("data/graphs_target/test")
@@ -263,12 +278,14 @@ def objective(trial):
         lr=lr,
         use_adamW=True,
         weight_decay=weight_decay,
+        loss_weight= loss_weight,
         epochs=100,
         batch_size=16,
         ID_model=f"optuna_{trial.number}",
         model_type = "gat",
         heads=heads,
-        use_graphnorm=True
+        use_graphnorm=True,
+        use_third_layer = use_third_layer
     )
 
     with open(f"gat_results/optuna_{trial.number}/summary_metrics.json") as f:
