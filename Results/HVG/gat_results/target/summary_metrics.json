@@ -1,0 +1,14 @@
+{
+    "final_accuracy": 0.7582614357805633,
+    "final_loss": 0.48386902823889005,
+    "precision": 0.7710822806418572,
+    "recall": 0.9691053422012443,
+    "f1_score": 0.858826884684856,
+    "auc": 0.7384669817398282,
+    "number_of_epochs": 50,
+    "hidden_channels": 64,
+    "dropout_rate": 0.2,
+    "learning_rate": 0.0001,
+    "ID_model": "target",
+    "timestamp": "2025-06-09 11:48:33"
+}

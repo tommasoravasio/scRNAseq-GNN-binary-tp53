@@ -1,0 +1,16 @@
+{
+    "final_accuracy": 0.9085137554940583,
+    "final_loss": 0.24349081433805017,
+    "precision": 0.9256490134994808,
+    "recall": 0.9562325681184295,
+    "f1_score": 0.9406922752216125,
+    "auc": 0.9438567827156226,
+    "number_of_epochs": 40,
+    "hidden_channels": 128,
+    "dropout_rate": 0.163416056938254,
+    "learning_rate": 0.0007532243521107202,
+    "weight_decay": 0.0003224285893127847,
+    "heads": 4,
+    "ID_model": "optuna_18",
+    "timestamp": "2025-06-12 08:53:31"
+}
