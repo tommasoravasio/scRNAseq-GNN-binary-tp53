@@ -23,6 +23,7 @@ import scanpy.external as sce
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 import xgboost as xgb
+import argparse
 
 
 import load_data
@@ -32,44 +33,53 @@ import model_constructor
 
 
 
-def main():
+def main(feature_selection="HVG"):
 
-    #BASELINE
-    train_df_pyg = model_constructor.load_graphs("data/graphs_target/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_target/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline", model_type="gat")
+    train_df_pyg = model_constructor.load_graphs(f"data/graphs_{feature_selection}/train")
+    test_df_pyg = model_constructor.load_graphs(f"data/graphs_{feature_selection}/test")
 
-   #Combat
-    train_df_pyg = model_constructor.load_graphs("data/graphs_target_combat/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_target_combat/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "combat", model_type="gat") 
-    
+    train_df_pyg_combat = model_constructor.load_graphs(f"data/graphs_{feature_selection}_combat/train")
+    test_df_pyg_combat = model_constructor.load_graphs(f"data/graphs_{feature_selection}_combat/test")
+
+    train_df_pyg_harmony = model_constructor.load_graphs(f"data/graphs_{feature_selection}_combat/train")
+    test_df_pyg_harmony = model_constructor.load_graphs(f"data/graphs_{feature_selection}_combat/test")
+
+    #BASELINE GCN
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline", model_type="gcn",feature_selection=feature_selection)
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline", model_type="gat",feature_selection=feature_selection)
+
+    #Combat
+    model = model_constructor.train_model(train_PyG=train_df_pyg_combat, test_PyG=test_df_pyg_combat, epochs = 50, batch_size = 16, ID_model = "combat", model_type="gcn",feature_selection=feature_selection) 
+    model = model_constructor.train_model(train_PyG=train_df_pyg_combat, test_PyG=test_df_pyg_combat, epochs = 50, batch_size = 16, ID_model = "combat", model_type="gat",feature_selection=feature_selection) 
+
     #harmony
-    train_df_pyg = model_constructor.load_graphs("data/graphs_target_harmony/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_target_harmony/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "harmony", model_type="gat")
+    model = model_constructor.train_model(train_PyG=train_df_pyg_harmony, test_PyG=test_df_pyg_harmony, epochs = 50, batch_size = 16, ID_model = "harmony", model_type="gcn",feature_selection=feature_selection)
+    model = model_constructor.train_model(train_PyG=train_df_pyg_harmony, test_PyG=test_df_pyg_harmony, epochs = 50, batch_size = 16, ID_model = "harmony", model_type="gat",feature_selection=feature_selection)
+
 
     #Weight
-    train_df_pyg = model_constructor.load_graphs("data/graphs_target/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_target/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "weight", loss_weight=True, model_type="gat")
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "weight", loss_weight=True, model_type="gcn",feature_selection=feature_selection)
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "weight", loss_weight=True, model_type="gat",feature_selection=feature_selection)
 
 
+    #AdamW
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gcn",feature_selection=feature_selection)
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat",feature_selection=feature_selection)
 
 
-
-
-
-
-
-
-
-
-
-
-
+    #GraphNorm
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "GraphNorm", use_graphnorm=True, model_type="gcn",feature_selection=feature_selection)
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "GraphNorm", use_graphnorm=True, model_type="gat",feature_selection=feature_selection)
 
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--feature_selection",
+        choices=["HVG", "target"],
+        default="HVG",
+    )
+    args = parser.parse_args()
+
+    main(feature_selection=args.feature_selection)
