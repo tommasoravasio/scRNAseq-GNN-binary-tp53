@@ -286,8 +286,8 @@ def objective(trial):
     loss_weight = trial.suggest_categorical("loss_weight", [True, False])
     use_third_layer = trial.suggest_categorical("use_third_layer", [True, False])
 
-    train_df_pyg = load_graphs("data/graphs_target/train")
-    test_df_pyg = load_graphs("data/graphs_target/test")
+    train_df_pyg = load_graphs("data/graphs_baseline/train")
+    test_df_pyg = load_graphs("data/graphs_baseline/test")
 
     model = train_model(
         train_PyG=train_df_pyg,
@@ -327,11 +327,11 @@ def main_optuna():
 
 def main_baseline():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_target/train")
-    test_df_pyg = load_graphs("data/graphs_target/test")
+    train_df_pyg = load_graphs("data/graphs_baseline/train")
+    test_df_pyg = load_graphs("data/graphs_baseline/test")
     model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat", use_graphnorm=True)
 
-# TESTING
+# LOCAL TESTING
 def test_run_baseline():
     train_df_pyg_big = load_graphs("data/graphs_baseline/train")
     test_df_pyg_big = load_graphs("data/graphs_baseline/test")

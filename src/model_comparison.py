@@ -35,39 +35,25 @@ import model_constructor
 def main():
 
     #BASELINE
-    train_df_pyg = model_constructor.load_graphs("data/graphs_baseline/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_baseline/test")
+    train_df_pyg = model_constructor.load_graphs("data/graphs_target/train")
+    test_df_pyg = model_constructor.load_graphs("data/graphs_target/test")
     model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "baseline", model_type="gat")
 
    #Combat
-    train_df_pyg = model_constructor.load_graphs("data/graphs_combat/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_combat/test")
+    train_df_pyg = model_constructor.load_graphs("data/graphs_target_combat/train")
+    test_df_pyg = model_constructor.load_graphs("data/graphs_target_combat/test")
     model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "combat", model_type="gat") 
     
     #harmony
-    train_df_pyg = model_constructor.load_graphs("data/graphs_harmony/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_harmony/test")
+    train_df_pyg = model_constructor.load_graphs("data/graphs_target_harmony/train")
+    test_df_pyg = model_constructor.load_graphs("data/graphs_target_harmony/test")
     model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "harmony", model_type="gat")
-    
-    #L2REG
-    train_df_pyg = model_constructor.load_graphs("data/graphs_L2reg/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_L2reg/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "L2reg", model_type="gat")
 
     #Weight
-    train_df_pyg = model_constructor.load_graphs("data/graphs_baseline/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_baseline/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "weight", loss_weight=True, model_type="gat")
-
-    #Smalltest
-    train_df_pyg = model_constructor.load_graphs("data/graphs_smalltest/train")
-    test_df_pyg = model_constructor.load_graphs("data/graphs_smalltest/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "smalltest", model_type="gat")
-
-    #Target tp53
     train_df_pyg = model_constructor.load_graphs("data/graphs_target/train")
     test_df_pyg = model_constructor.load_graphs("data/graphs_target/test")
-    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "target", model_type="gat")
+    model = model_constructor.train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "weight", loss_weight=True, model_type="gat")
+
 
 
 
