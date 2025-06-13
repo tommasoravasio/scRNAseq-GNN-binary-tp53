@@ -13,4 +13,4 @@ module load miniconda3
 eval "$(conda shell.bash hook)"
 conda activate tp53
 cd $HOME/tp53
-python src/correlation_comparison.py
+python src/correlation_comparison.py --feature_selection "target"

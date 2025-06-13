@@ -417,7 +417,7 @@ def test_run_baseline():
     )
     print("Test run completed successfully.")
 
-
+# LOCAL TESTING
 def main_optuna_test():
     train_df_pyg_big = load_graphs("data/graphs_baseline/train")
     test_df_pyg_big = load_graphs("data/graphs_baseline/test")
