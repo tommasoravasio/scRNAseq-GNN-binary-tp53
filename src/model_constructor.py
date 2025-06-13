@@ -131,7 +131,8 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 
 def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
-                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, weight_decay=1e-4, model_type="gcn",heads=1, use_third_layer=False):
+                epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, 
+                weight_decay=1e-4, model_type="gcn",heads=1, use_third_layer=False, feature_selection="HVG"):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -157,7 +158,7 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
     else:
         criterion = CrossEntropyLoss().to(device)
     
-    results_dir = f"{model_type}_results/{ID_model}"
+    results_dir = f"{feature_selection}/{model_type}_results/{ID_model}"
     os.makedirs(results_dir, exist_ok=True)
     log_path = f"{results_dir}/training_log.csv"
     with open(log_path,mode="w",newline="") as f:
@@ -277,43 +278,92 @@ def load_graphs(path):
 
 
 
-def objective(trial):
-    hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
-    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
-    lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
-    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
-    heads = trial.suggest_categorical("heads", [1, 2, 4, 8, 16])
-    loss_weight = trial.suggest_categorical("loss_weight", [True, False])
-    use_third_layer = trial.suggest_categorical("use_third_layer", [True, False])
+# def objective(trial):
+#     hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
+#     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+#     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+#     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
+#     heads = trial.suggest_categorical("heads", [1, 2, 4, 8, 16])
+#     loss_weight = trial.suggest_categorical("loss_weight", [True, False])
+#     use_third_layer = trial.suggest_categorical("use_third_layer", [True, False])
 
-    train_df_pyg = load_graphs("data/graphs_baseline/train")
-    test_df_pyg = load_graphs("data/graphs_baseline/test")
+#     train_df_pyg = load_graphs("data/graphs_baseline/train")
+#     test_df_pyg = load_graphs("data/graphs_baseline/test")
 
-    model = train_model(
-        train_PyG=train_df_pyg,
-        test_PyG=test_df_pyg,
-        hidden_channels=hidden_channels,
-        dropout_rate=dropout_rate,
-        lr=lr,
-        use_adamW=True,
-        weight_decay=weight_decay,
-        loss_weight= loss_weight,
-        epochs=100,
-        batch_size=16,
-        ID_model=f"optuna_{trial.number}",
-        model_type = "gat",
-        heads=heads,
-        use_graphnorm=True,
-        use_third_layer = use_third_layer
-    )
+#     model = train_model(
+#         train_PyG=train_df_pyg,
+#         test_PyG=test_df_pyg,
+#         hidden_channels=hidden_channels,
+#         dropout_rate=dropout_rate,
+#         lr=lr,
+#         use_adamW=True,
+#         weight_decay=weight_decay,
+#         loss_weight= loss_weight,
+#         epochs=100,
+#         batch_size=16,
+#         ID_model=f"optuna_{trial.number}",
+#         model_type = "gat",
+#         heads=heads,
+#         use_graphnorm=True,
+#         use_third_layer = use_third_layer,
+#         feature_selection="target"
+#     )
 
-    with open(f"gat_results/optuna_{trial.number}/summary_metrics.json") as f:
-        metrics = json.load(f)
+#     with open(f"gat_results/optuna_{trial.number}/summary_metrics.json") as f:
+#         metrics = json.load(f)
 
-    return metrics["f1_score"]
+#     return metrics["f1_score"]
 
 
 def main_optuna():
+
+
+    epochs=100
+    batch_size=16
+    feature_selection="target"
+    graphs_path = "graphs_baseline"
+    
+
+    
+
+    
+    def objective(trial):
+        hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
+        dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+        lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+        weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
+        heads = trial.suggest_categorical("heads", [1, 2, 4, 8, 16])
+        loss_weight = trial.suggest_categorical("loss_weight", [True, False])
+        use_third_layer = trial.suggest_categorical("use_third_layer", [True, False])
+
+        train_df_pyg = load_graphs(f"data/{graphs_path}/train")    
+        test_df_pyg = load_graphs(f"data/{graphs_path}/test")
+
+        model = train_model(
+            train_PyG=train_df_pyg,
+            test_PyG=test_df_pyg,
+            hidden_channels=hidden_channels,
+            dropout_rate=dropout_rate,
+            lr=lr,
+            use_adamW=True,
+            weight_decay=weight_decay,
+            loss_weight= loss_weight,
+            epochs=epochs,
+            batch_size=batch_size,
+            ID_model=f"optuna_{trial.number}",
+            model_type = "gat",
+            heads=heads,
+            use_graphnorm=True,
+            use_third_layer = use_third_layer,
+            feature_selection=feature_selection
+        )
+
+        with open(f"{feature_selection}/gat_results/optuna_{trial.number}/summary_metrics.json") as f:
+            metrics = json.load(f)
+
+        return metrics["f1_score"]
+        
+
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=20)
 
@@ -327,9 +377,18 @@ def main_optuna():
 
 def main_baseline():
     # IMPORTA GRAFI COME train_df_pyg test_df_pyg
-    train_df_pyg = load_graphs("data/graphs_baseline/train")
-    test_df_pyg = load_graphs("data/graphs_baseline/test")
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = 50, batch_size = 16, ID_model = "AdamW", use_adamW=True, model_type="gat", use_graphnorm=True)
+    epochs = 50
+    batch_size = 16
+    ID_model = "AdamW"
+    use_adamW=True
+    model_type="gat"
+    use_graphnorm=True
+    feature_selection="target"
+    graphs_path = "graphs_baseline"
+
+    train_df_pyg = load_graphs(f"data/{graphs_path}/train")
+    test_df_pyg = load_graphs(f"data/{graphs_path}/test")
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = epochs, batch_size = batch_size, ID_model = ID_model, use_adamW=use_adamW, model_type=model_type, use_graphnorm=use_graphnorm, feature_selection=feature_selection)
 
 # LOCAL TESTING
 def test_run_baseline():
@@ -353,7 +412,8 @@ def test_run_baseline():
         model_type="gat",
         heads=2,
         use_graphnorm=True,
-        use_third_layer=False
+        use_third_layer=False,
+        feature_selection="testing"
     )
     print("Test run completed successfully.")
 
@@ -388,10 +448,11 @@ def main_optuna_test():
             model_type="gat",
             heads=heads,
             use_graphnorm=True,
-            use_third_layer=use_third_layer
+            use_third_layer=use_third_layer,
+            feature_selection="testing"
         )
 
-        with open(f"gat_results/optuna_test_{trial.number}/summary_metrics.json") as f:
+        with open(f"testing/gat_results/optuna_test_{trial.number}/summary_metrics.json") as f:
             metrics = json.load(f)
 
         return metrics["f1_score"]
