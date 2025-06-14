@@ -1,0 +1,20 @@
+{
+    "final_accuracy": 0.7561452059254435,
+    "final_loss": 0.5444019167528799,
+    "precision": 0.7588803404812572,
+    "recall": 0.9946363441321605,
+    "f1_score": 0.8609099350046425,
+    "auc": 0.599518183010544,
+    "number_of_epochs": 50,
+    "hidden_channels": 64,
+    "dropout_rate": 0.2,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "heads": 1,
+    "use_graphnorm": false,
+    "use_third_layer": false,
+    "best_epoch": 1,
+    "best_f1": 0.8628285820066642,
+    "ID_model": "combat",
+    "timestamp": "2025-06-14 19:44:30"
+}

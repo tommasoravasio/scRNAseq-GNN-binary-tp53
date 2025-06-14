@@ -157,8 +157,8 @@ def main(feature_selection="HVG",batch_correction=None):
     df = pd.read_csv(f"notebooks/final_preprocessed_data_{feature_selection}_{batch_correction}.csv", index_col=0)
     train_df, test_df =train_test_split(df, test_size=0.2, random_state=42)
     mat = build_correlation_matrix(train_df.iloc[:, :-1], corr_threshold=0.2, p_value_threshold=0.05, p_val="yes")
-    create_PyG_graph_from_df_cluster(train_df, mat, label_column="mutation_status",label="train",graphs_folder_ID="_target")
-    create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test",graphs_folder_ID="_target")
+    create_PyG_graph_from_df_cluster(train_df, mat, label_column="mutation_status",label="train",graphs_folder_ID=f"_{feature_selection}_{batch_correction}")
+    create_PyG_graph_from_df_cluster(test_df, mat, label_column="mutation_status",label="test",graphs_folder_ID=f"_{feature_selection}_{batch_correction}")
 
 if __name__ == "__main__":
     main(feature_selection="target",batch_correction="combat")  

@@ -73,6 +73,19 @@ def main(feature_selection="HVG", batch_correction=None):
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata) 
     
+    #FEATURE SELECTION
+    if feature_selection=="HVG":
+        adata.layers["pre_feature_selection"] = adata.X.copy()
+        sc.pp.highly_variable_genes(adata, min_mean=0.1, max_mean=3, min_disp=0.5 )
+        adata = adata[:, adata.var.highly_variable]
+    elif feature_selection=="target":
+        adata.layers["pre_feature_selection"] = adata.X.copy()
+        mask = adata.var_names.isin(target_genes)
+        adata = adata[:, mask]
+    else:
+        raise KeyError("feature_selection can only be values from this list [\"HVG\" , \"target\"] ")
+
+
     #BATCH CORRECTION
     if batch_correction=="harmony":
         adata.layers["pre_harmony"] = adata.X.copy()
@@ -86,21 +99,11 @@ def main(feature_selection="HVG", batch_correction=None):
     else:
         raise KeyError("batch_correction can only be values from this list [None , \"combat\" , \"harmony\" ] ")          
     
-    #FEATURE SELECTION
-    if feature_selection=="HVG":
-        adata.layers["pre_feature_selection"] = adata.X.copy()
-        sc.pp.highly_variable_genes(adata, min_mean=0.1, max_mean=3, min_disp=0.5 )
-        adata = adata[:, adata.var.highly_variable]
-    elif feature_selection=="target":
-        adata.layers["pre_feature_selection"] = adata.X.copy()
-        mask = adata.var_names.isin(target_genes)
-        adata = adata[:, mask]
-    else:
-        raise KeyError("feature_selection can only be values from this list [\"HVG\" , \"target\"] ")
 
     final_df = ad.AnnData.to_df(adata)
     final_df["mutation_status"] = adata.obs["mutation_status"].values
-    final_df.to_csv(f"final_preprocessed_data_{feature_selection}_{batch_correction}.csv")
+    suffix = f"{batch_correction}" if batch_correction else ""
+    final_df.to_csv(f"final_preprocessed_data_{feature_selection}_{suffix}.csv")
 
 if __name__ == "__main__":
     main(feature_selection="target", batch_correction="combat")
