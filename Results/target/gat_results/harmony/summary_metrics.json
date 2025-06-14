@@ -1,0 +1,20 @@
+{
+    "final_accuracy": 0.7533778284225948,
+    "final_loss": 0.5164768133157244,
+    "precision": 0.7581227436823105,
+    "recall": 0.9912036043767432,
+    "f1_score": 0.8591352859135286,
+    "auc": 0.6973566224574027,
+    "number_of_epochs": 50,
+    "hidden_channels": 64,
+    "dropout_rate": 0.2,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "heads": 1,
+    "use_graphnorm": false,
+    "use_third_layer": false,
+    "best_epoch": 6,
+    "best_f1": 0.8629883354934271,
+    "ID_model": "harmony",
+    "timestamp": "2025-06-14 19:55:26"
+}
