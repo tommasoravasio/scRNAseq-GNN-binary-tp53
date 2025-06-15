@@ -14,13 +14,11 @@ data/
 notebooks/HVG3068_with_mut.csv
 notebooks/final_preprocessed_data_nuovo.csv
 model_paco.py
-notebooks/target.csv
-notebooks/final_preprocessed_data_combat.csv
-notebooks/final_preprocessed_data_harmony.csv
 notebooks/df_test_subset.csv
 notebooks/df_train_subset.csv
-notebooks/final_preprocessed_data_target_
+notebooks/final_preprocessed_data_target_.csv
 notebooks/final_preprocessed_data_target_combat.csv
 notebooks/final_preprocessed_data_target_harmony.csv
+notebooks/final_preprocessed_data_HVG_.csv
 notebooks/final_preprocessed_data_HVG_harmony.csv
 notebooks/final_preprocessed_data_HVG_combat.csv
