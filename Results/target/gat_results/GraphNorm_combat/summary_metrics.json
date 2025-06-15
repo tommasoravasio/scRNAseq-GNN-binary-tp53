@@ -1,0 +1,21 @@
+{
+    "final_accuracy": 0.802213902002279,
+    "final_loss": 0.4083523068499441,
+    "precision": 0.8125907111756169,
+    "recall": 0.9609525852821283,
+    "f1_score": 0.8805662046593925,
+    "auc": 0.8438571012053098,
+    "number_of_epochs": 50,
+    "hidden_channels": 64,
+    "dropout_rate": 0.2,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "heads": 1,
+    "use_graphnorm": true,
+    "use_third_layer": false,
+    "best_epoch": 49,
+    "best_f1": 0.8812785388127854,
+    "early_stopping": false,
+    "ID_model": "GraphNorm_combat",
+    "timestamp": "2025-06-15 19:21:57"
+}

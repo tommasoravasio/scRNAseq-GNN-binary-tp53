@@ -282,7 +282,6 @@ def load_graphs(path):
 
 def main_optuna():
 
-
     epochs=100
     batch_size=16
     feature_selection="target"
@@ -317,7 +316,7 @@ def main_optuna():
             use_graphnorm=True,
             use_third_layer = use_third_layer,
             feature_selection=feature_selection,
-            early_stopping=True
+            early_stopping=False
         )
 
         with open(f"{feature_selection}/gat_results/optuna_{trial.number}/summary_metrics.json") as f:
@@ -340,12 +339,12 @@ def main_optuna():
 def main_baseline():
     epochs = 50
     batch_size = 16
-    ID_model = "AdamW"
+    ID_model = "GraphNorm_combat"
     use_adamW=True
     model_type="gat"
     use_graphnorm=True
     feature_selection="target"
-    graphs_path = "graphs_baseline"
+    graphs_path = "graphs_target_combat"
 
     train_df_pyg = load_graphs(f"data/{graphs_path}/train")
     test_df_pyg = load_graphs(f"data/{graphs_path}/test")
