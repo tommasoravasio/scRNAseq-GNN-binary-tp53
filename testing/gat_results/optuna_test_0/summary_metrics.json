@@ -1,0 +1,21 @@
+{
+    "final_accuracy": 1.0,
+    "final_loss": 0.661297063032786,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "auc": null,
+    "number_of_epochs": 2,
+    "hidden_channels": 32,
+    "dropout_rate": 0.20864776878180388,
+    "learning_rate": 0.0001225848847292779,
+    "weight_decay": 1.2117953671477323e-06,
+    "heads": 2,
+    "use_graphnorm": true,
+    "use_third_layer": false,
+    "best_epoch": 1,
+    "best_f1": 1.0,
+    "early_stopping": false,
+    "ID_model": "optuna_test_0",
+    "timestamp": "2025-06-15 12:37:50"
+}
