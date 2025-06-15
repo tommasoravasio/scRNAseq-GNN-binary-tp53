@@ -132,7 +132,7 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 
 def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
                 epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, 
-                weight_decay=1e-4, model_type="gcn",heads=1, use_third_layer=False, feature_selection="HVG"):
+                weight_decay=1e-4, model_type="gcn",heads=1, use_third_layer=False, feature_selection="HVG", early_stopping=False ):
     
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
@@ -201,13 +201,14 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
             print(f"Epoch: {epoch} | Loss: {loss:.4f} | Train Acc: {train_acc:.4f} | Train F1: {train_f1:.4f} | Test Acc: {test_acc:.4f} | Test F1: {test_f1:.4f} | Test Loss: {test_loss:.4f}")
             writer.writerow([epoch, loss, train_acc, train_f1, test_acc, test_f1, test_loss])
 
+
             if test_f1 > best_f1:
                 best_f1 = test_f1
                 epochs_no_improve = 0
                 best_model_state = model.state_dict()
             else:
                 epochs_no_improve += 1
-                if epochs_no_improve >= patience:
+                if early_stopping and epochs_no_improve >= patience:
                     print(f"Early stopping triggered at epoch {epoch}")
                     break
     
@@ -256,6 +257,7 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
         "use_third_layer": use_third_layer,
         "best_epoch": epoch - epochs_no_improve,
         "best_f1": best_f1,
+        "early_stopping": early_stopping,
         "ID_model": ID_model,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     with open(f"{results_dir}/summary_metrics.json", "w") as f:
@@ -278,43 +280,6 @@ def load_graphs(path):
 
 
 
-# def objective(trial):
-#     hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
-#     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
-#     lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
-#     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
-#     heads = trial.suggest_categorical("heads", [1, 2, 4, 8, 16])
-#     loss_weight = trial.suggest_categorical("loss_weight", [True, False])
-#     use_third_layer = trial.suggest_categorical("use_third_layer", [True, False])
-
-#     train_df_pyg = load_graphs("data/graphs_baseline/train")
-#     test_df_pyg = load_graphs("data/graphs_baseline/test")
-
-#     model = train_model(
-#         train_PyG=train_df_pyg,
-#         test_PyG=test_df_pyg,
-#         hidden_channels=hidden_channels,
-#         dropout_rate=dropout_rate,
-#         lr=lr,
-#         use_adamW=True,
-#         weight_decay=weight_decay,
-#         loss_weight= loss_weight,
-#         epochs=100,
-#         batch_size=16,
-#         ID_model=f"optuna_{trial.number}",
-#         model_type = "gat",
-#         heads=heads,
-#         use_graphnorm=True,
-#         use_third_layer = use_third_layer,
-#         feature_selection="target"
-#     )
-
-#     with open(f"gat_results/optuna_{trial.number}/summary_metrics.json") as f:
-#         metrics = json.load(f)
-
-#     return metrics["f1_score"]
-
-
 def main_optuna():
 
 
@@ -322,10 +287,6 @@ def main_optuna():
     batch_size=16
     feature_selection="target"
     graphs_path = "graphs_baseline"
-    
-
-    
-
     
     def objective(trial):
         hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
@@ -355,7 +316,8 @@ def main_optuna():
             heads=heads,
             use_graphnorm=True,
             use_third_layer = use_third_layer,
-            feature_selection=feature_selection
+            feature_selection=feature_selection,
+            early_stopping=True
         )
 
         with open(f"{feature_selection}/gat_results/optuna_{trial.number}/summary_metrics.json") as f:
@@ -376,7 +338,6 @@ def main_optuna():
 
 
 def main_baseline():
-    # IMPORTA GRAFI COME train_df_pyg test_df_pyg
     epochs = 50
     batch_size = 16
     ID_model = "AdamW"
@@ -388,7 +349,7 @@ def main_baseline():
 
     train_df_pyg = load_graphs(f"data/{graphs_path}/train")
     test_df_pyg = load_graphs(f"data/{graphs_path}/test")
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = epochs, batch_size = batch_size, ID_model = ID_model, use_adamW=use_adamW, model_type=model_type, use_graphnorm=use_graphnorm, feature_selection=feature_selection)
+    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = epochs, batch_size = batch_size, ID_model = ID_model, use_adamW=use_adamW, model_type=model_type, use_graphnorm=use_graphnorm, feature_selection=feature_selection, early_stopping=False)
 
 # LOCAL TESTING
 def test_run_baseline():
