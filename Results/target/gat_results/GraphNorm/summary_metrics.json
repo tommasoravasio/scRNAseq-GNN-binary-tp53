@@ -1,10 +1,10 @@
 {
-    "final_accuracy": 0.7729122578544685,
-    "final_loss": 0.4638337706758951,
-    "precision": 0.7846931659693166,
-    "recall": 0.9656726024458271,
-    "f1_score": 0.8658266807732999,
-    "auc": 0.7730976683370003,
+    "final_accuracy": 0.7683542243203646,
+    "final_loss": 0.471631749222676,
+    "precision": 0.7769414984604858,
+    "recall": 0.9744689980690839,
+    "f1_score": 0.8645664794898639,
+    "auc": 0.7615834699219788,
     "number_of_epochs": 50,
     "hidden_channels": 64,
     "dropout_rate": 0.2,
@@ -13,8 +13,9 @@
     "heads": 1,
     "use_graphnorm": true,
     "use_third_layer": false,
-    "best_epoch": 26,
-    "best_f1": 0.867723862881018,
+    "best_epoch": 36,
+    "best_f1": 0.8670618120237087,
+    "early_stopping": false,
     "ID_model": "GraphNorm",
-    "timestamp": "2025-06-14 20:34:07"
+    "timestamp": "2025-06-15 16:33:55"
 }

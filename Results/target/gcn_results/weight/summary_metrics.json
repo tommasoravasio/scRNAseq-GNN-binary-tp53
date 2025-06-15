@@ -1,10 +1,10 @@
 {
-    "final_accuracy": 0.6840306039394433,
-    "final_loss": 0.665651416949307,
-    "precision": 0.7898550724637681,
-    "recall": 0.7951083458485304,
-    "f1_score": 0.7924730033144446,
-    "auc": 0.6655777938566814,
+    "final_accuracy": 0.7436106137066579,
+    "final_loss": 0.6858275226162126,
+    "precision": 0.7740674955595027,
+    "recall": 0.934992490881785,
+    "f1_score": 0.8469536488193568,
+    "auc": 0.6702852162009334,
     "number_of_epochs": 50,
     "hidden_channels": 64,
     "dropout_rate": 0.2,
@@ -13,8 +13,9 @@
     "heads": 1,
     "use_graphnorm": false,
     "use_third_layer": false,
-    "best_epoch": 27,
-    "best_f1": 0.817615203841831,
+    "best_epoch": 48,
+    "best_f1": 0.849185699142334,
+    "early_stopping": false,
     "ID_model": "weight",
-    "timestamp": "2025-06-14 20:03:12"
+    "timestamp": "2025-06-15 15:29:41"
 }

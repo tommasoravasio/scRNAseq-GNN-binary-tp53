@@ -35,8 +35,8 @@ import model_constructor
 
 def main(feature_selection="HVG"):
 
-    train_df_pyg = model_constructor.load_graphs(f"data/graphs_{feature_selection}/train")
-    test_df_pyg = model_constructor.load_graphs(f"data/graphs_{feature_selection}/test")
+    train_df_pyg = model_constructor.load_graphs(f"data/graphs_{feature_selection}_/train")
+    test_df_pyg = model_constructor.load_graphs(f"data/graphs_{feature_selection}_/test")
 
     train_df_pyg_combat = model_constructor.load_graphs(f"data/graphs_{feature_selection}_combat/train")
     test_df_pyg_combat = model_constructor.load_graphs(f"data/graphs_{feature_selection}_combat/test")
