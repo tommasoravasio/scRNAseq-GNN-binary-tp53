@@ -1,0 +1,21 @@
+{
+    "final_accuracy": 0.9514895002441803,
+    "final_loss": 0.12529405473317942,
+    "precision": 0.9469371030526531,
+    "recall": 0.9916326968461704,
+    "f1_score": 0.9687696499685601,
+    "auc": 0.9904780269621789,
+    "number_of_epochs": 50,
+    "hidden_channels": 128,
+    "dropout_rate": 0.1323739634428642,
+    "learning_rate": 0.00526368665188175,
+    "weight_decay": 2.3050103809753536e-05,
+    "heads": 16,
+    "use_graphnorm": false,
+    "use_third_layer": true,
+    "best_epoch": 13,
+    "best_f1": 0.9808001716185777,
+    "early_stopping": false,
+    "ID_model": "optuna_2",
+    "timestamp": "2025-06-15 21:18:38"
+}
