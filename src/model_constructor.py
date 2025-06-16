@@ -284,8 +284,8 @@ def main_optuna():
 
     epochs=50
     batch_size=16
-    feature_selection="target"
-    graphs_path = "graphs_target_combat"
+    feature_selection="HVG"
+    graphs_path = "graphs_HVG_"
     
     def objective(trial):
         hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
@@ -313,7 +313,7 @@ def main_optuna():
             ID_model=f"optuna_{trial.number}",
             model_type = "gat",
             heads=heads,
-            use_graphnorm=False,
+            use_graphnorm=True,
             use_third_layer = use_third_layer,
             feature_selection=feature_selection,
             early_stopping=False
