@@ -32,6 +32,51 @@ import network_constructor
 import model_constructor
 
 
+def plot_training_curves(csv_path, model_name="Model"):
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    df = pd.read_csv(csv_path)
+    plt.figure(figsize=(18, 5))
+    plt.subplot(1, 3, 1)
+    sns.lineplot(data=df, x="Epoch", y="Train Accuracy", label="Train Accuracy")
+    sns.lineplot(data=df, x="Epoch", y="Test Accuracy", label="Validation Accuracy")
+    plt.title(f"{model_name} - Accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.grid(True)
+
+    plt.subplot(1, 3, 2)
+    sns.lineplot(data=df, x="Epoch", y="Loss", label="Train Loss")
+    if "Test Loss" in df.columns:
+        sns.lineplot(data=df, x="Epoch", y="Test Loss", label="Validation Loss")
+    plt.title(f"{model_name} - Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.grid(True)
+
+    plt.subplot(1, 3, 3)
+    f1_plotted = False
+    if "Train F1" in df.columns:
+        sns.lineplot(data=df, x="Epoch", y="Train F1", label="Train F1")
+        f1_plotted = True
+    if "Test F1" in df.columns:
+        sns.lineplot(data=df, x="Epoch", y="Test F1", label="Validation F1")
+        f1_plotted = True
+    if f1_plotted:
+        plt.title(f"{model_name} - F1 Score")
+        plt.xlabel("Epoch")
+        plt.ylabel("F1 Score")
+        plt.grid(True)
+    else:
+        plt.axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+
+
 
 def main(feature_selection="HVG"):
 
