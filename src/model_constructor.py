@@ -19,6 +19,22 @@ import argparse
 
 
 class GCN(Module):
+    """Graph Convolutional Network (GCN) model for graph classification.
+
+    The model consists of two GCN convolutional layers. Each GCN layer is
+    followed by GraphNorm (if `use_graphnorm` is True) or BatchNorm,
+    a ReLU activation function, and a Dropout layer. The output of the GCN
+    layers is pooled using global mean pooling, and then passed through a
+    final linear layer to produce class logits.
+
+    Args:
+        in_channels (int): Size of each input sample (number of node features).
+        hidden_channels (int): Size of each hidden layer.
+        out_channels (int): Size of each output sample (number of classes).
+        dropout_rate (float): Dropout probability for the dropout layers.
+        use_graphnorm (bool, optional): If True, uses GraphNorm. Otherwise,
+            uses BatchNorm1d. Defaults to False.
+    """
     def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False):
         super(GCN,self).__init__()
         self.use_graphnorm = use_graphnorm
@@ -32,6 +48,17 @@ class GCN(Module):
         
 
     def forward(self, x, edge_index,batch ):
+        """Defines the computation performed at every call.
+
+        Args:
+            x (torch.Tensor): Node feature matrix of shape [num_nodes, in_channels].
+            edge_index (torch.Tensor): Graph connectivity in COO format with shape [2, num_edges].
+            batch (torch.Tensor): Batch vector of shape [num_nodes], which assigns each node to
+                a specific graph in the batch.
+
+        Returns:
+            torch.Tensor: Output tensor with shape [batch_size, out_channels].
+        """
         x=self.conv1(x, edge_index)
         x=self.bn1(x,batch) if self.use_graphnorm else self.bn1(x)
         x=F.relu(x)
@@ -51,6 +78,25 @@ class GCN(Module):
 
 
 class GAT(Module):
+    """Graph Attention Network (GAT) model for graph classification.
+
+    The model consists of two or optionally three GAT convolutional layers.
+    Each GAT layer uses multi-head attention and is followed by GraphNorm
+    (if `use_graphnorm` is True) or BatchNorm, a ReLU activation, and a
+    Dropout layer. The output from the GAT layers is pooled using global
+    mean pooling and then passed through a final linear layer.
+
+    Args:
+        in_channels (int): Size of each input sample (number of node features).
+        hidden_channels (int): Size of each hidden layer.
+        out_channels (int): Size of each output sample (number of classes).
+        dropout_rate (float): Dropout probability for the dropout layers.
+        use_graphnorm (bool, optional): If True, uses GraphNorm. Otherwise,
+            uses BatchNorm1d. Defaults to False.
+        heads (int, optional): Number of multi-head attentions. Defaults to 1.
+        use_third_layer (bool, optional): If True, a third GAT layer is added.
+            Defaults to False.
+    """
     def __init__(self, in_channels, hidden_channels, out_channels, dropout_rate, use_graphnorm=False, heads=1,use_third_layer=False):
         super(GAT,self).__init__()
         self.use_graphnorm = use_graphnorm
@@ -71,6 +117,17 @@ class GAT(Module):
         self.dropout = torch.nn.Dropout(p=dropout_rate)
 
     def forward(self, x, edge_index, batch):
+        """Defines the computation performed at every call.
+
+        Args:
+            x (torch.Tensor): Node feature matrix of shape [num_nodes, in_channels].
+            edge_index (torch.Tensor): Graph connectivity in COO format with shape [2, num_edges].
+            batch (torch.Tensor): Batch vector of shape [num_nodes], which assigns each node to
+                a specific graph in the batch.
+
+        Returns:
+            torch.Tensor: Output tensor with shape [batch_size, out_channels].
+        """
         x = self.conv1(x, edge_index)
         x = self.bn1(x, batch) if self.use_graphnorm else self.bn1(x)
         x = F.relu(x)
@@ -96,9 +153,27 @@ class GAT(Module):
 
 
 def train(model,train_loader,optimizer,criterion,device):
-        model.train()
-        total_loss = 0
-        for batch in train_loader:
+    """Trains the given model for one epoch.
+
+    Iterates over the training data, computes gradients, and updates model
+    parameters.
+
+    Args:
+        model (torch.nn.Module): The model to be trained.
+        train_loader (torch_geometric.loader.DataLoader): DataLoader providing
+            the training batches.
+        optimizer (torch.optim.Optimizer): The optimizer for updating model
+            weights.
+        criterion (torch.nn.Module): The loss function used for training.
+        device (torch.device): The device (CPU or CUDA) on which to perform
+            computations.
+
+    Returns:
+        float: The average loss over all batches in the training loader.
+    """
+    model.train()
+    total_loss = 0
+    for batch in train_loader:
             batch = batch.to(device)
             optimizer.zero_grad()
             out = model(batch.x, batch.edge_index, batch.batch)
@@ -110,9 +185,31 @@ def train(model,train_loader,optimizer,criterion,device):
     
 
 def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
-        model.eval()
-        y_true = []
-        y_pred = []
+    """Evaluates the performance of the model on the provided data.
+
+    Sets the model to evaluation mode and computes predictions, loss, and
+    accuracy. Optionally, it can also compute the confusion matrix.
+
+    Args:
+        model (torch.nn.Module): The model to be evaluated.
+        loader (torch_geometric.loader.DataLoader): DataLoader providing the data
+            batches for evaluation.
+        device (torch.device): The device (CPU or CUDA) on which to perform
+            computations.
+        criterion (torch.nn.Module): The loss function used for evaluation.
+        compute_confusion_matrix (bool, optional): If True, computes and
+            returns the confusion matrix. Defaults to False.
+
+    Returns:
+        tuple:
+            - float: The accuracy of the model on the dataset.
+            - float: The average loss over all batches in the loader.
+            - numpy.ndarray (optional): The confusion matrix, if
+              `compute_confusion_matrix` was set to True.
+    """
+    model.eval()
+    y_true = []
+    y_pred = []
         loss = 0
         with torch.no_grad():
             for batch in loader:
@@ -133,7 +230,40 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
 def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
                 epochs=30, ID_model="baseline",loss_weight=False, use_graphnorm=False, use_adamW=False, 
                 weight_decay=1e-4, model_type="gcn",heads=1, use_third_layer=False, feature_selection="HVG", early_stopping=False ):
-    
+    """Initializes, trains, and evaluates a GCN or GAT model.
+
+    This function sets up the model (GCN or GAT) based on the provided
+    parameters, creates DataLoaders, and then runs the training loop for a
+    specified number of epochs. It logs training progress (loss, accuracy, F1)
+    to a CSV file and saves performance metrics (accuracy, precision, recall,
+    F1, AUC) and the confusion matrix. The trained model state dictionary is
+    also saved. Implements early stopping based on the test F1 score if
+    `early_stopping` is enabled.
+
+    Args:
+        train_PyG (list): List of `torch_geometric.data.Data` objects for training.
+        test_PyG (list): List of `torch_geometric.data.Data` objects for testing.
+        batch_size (int, optional): Batch size for DataLoaders. Defaults to 32.
+        hidden_channels (int, optional): Number of units in hidden layers. Defaults to 64.
+        dropout_rate (float, optional): Dropout rate. Defaults to 0.2.
+        lr (float, optional): Learning rate. Defaults to 0.0001.
+        epochs (int, optional): Number of training epochs. Defaults to 30.
+        ID_model (str, optional): Model identifier for saving results. Defaults to "baseline".
+        loss_weight (bool, optional): If True, applies class weights to the loss. Defaults to False.
+        use_graphnorm (bool, optional): If True, uses GraphNorm. Defaults to False.
+        use_adamW (bool, optional): If True, uses AdamW optimizer. Defaults to False.
+        weight_decay (float, optional): Weight decay for AdamW. Defaults to 1e-4.
+        model_type (str, optional): Model type, "gcn" or "gat". Defaults to "gcn".
+        heads (int, optional): Number of attention heads for GAT. Defaults to 1.
+        use_third_layer (bool, optional): If True, GAT uses a third layer. Defaults to False.
+        feature_selection (str, optional): Feature selection method name, used for result directory naming.
+            Defaults to "HVG".
+        early_stopping (bool, optional): If True, enables early stopping based on test F1 score.
+            Defaults to False.
+
+    Returns:
+        torch.nn.Module: The trained PyTorch model.
+    """
     train_loader = DataLoader(train_PyG, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_PyG, batch_size=batch_size)
 
@@ -267,6 +397,20 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
 
 
 def load_graphs(path):
+    """Loads graph data objects from .pt files in a specified directory.
+
+    Iterates through all `.pt` files in the given directory, loads them
+    using `torch.load()`. If a loaded file contains a list of graphs,
+    these are extended to the main list. Otherwise, the single graph
+    object is appended.
+
+    Args:
+        path (str or pathlib.Path): The path to the directory containing
+            the .pt files.
+
+    Returns:
+        list: A list of graph data objects (e.g., `torch_geometric.data.Data`).
+    """
     graph_list = []
     for pt_file in sorted(Path(path).glob("*.pt")):
         graph = torch.load(pt_file, weights_only=False)
@@ -281,13 +425,42 @@ def load_graphs(path):
 
 
 def main_optuna():
+    """Performs hyperparameter optimization for the GAT model using Optuna.
 
+    This function defines fixed parameters like epochs and batch size, then
+    sets up an Optuna study to find the best hyperparameters for the GAT model.
+    The hyperparameters searched include hidden channels, dropout rate,
+    learning rate, weight decay, number of attention heads, usage of
+    loss weighting, and inclusion of a third GAT layer.
+
+    The `objective` function (defined nestedly) is maximized based on the
+    F1 score achieved on the test set. Results of the best trial, including
+    the F1 score and corresponding parameters, are printed to the console.
+    """
     epochs=50
     batch_size=16
     feature_selection="HVG"
     graphs_path = "graphs_HVG_"
     
     def objective(trial):
+        """Objective function for Optuna hyperparameter optimization.
+
+        This function is called by Optuna for each trial. It samples
+        hyperparameters for the GAT model using the `trial` object,
+        trains the model using these hyperparameters, and returns the
+        F1 score achieved on the test set.
+
+        Args:
+            trial (optuna.trial.Trial): An Optuna trial object that suggests
+                values for hyperparameters like hidden_channels, dropout_rate,
+                learning_rate, weight_decay, heads, loss_weight, and
+                use_third_layer.
+
+        Returns:
+            float: The F1 score obtained from training the model with the
+                   suggested hyperparameters. This score is what Optuna
+                   attempts to maximize.
+        """
         hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
         dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
         lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
