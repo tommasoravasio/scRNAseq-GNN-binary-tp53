@@ -181,7 +181,7 @@ def train(model,train_loader,optimizer,criterion,device):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        return total_loss / len(train_loader)
+    return total_loss / len(train_loader)
     
 
 def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
@@ -210,21 +210,21 @@ def evaluate(model,loader,device,criterion,compute_confusion_matrix=False):
     model.eval()
     y_true = []
     y_pred = []
-        loss = 0
-        with torch.no_grad():
-            for batch in loader:
-                batch = batch.to(device)
-                out = model(batch.x, batch.edge_index, batch.batch)
-                pred = out.argmax(dim=1)
-                y_true.extend(batch.y.cpu().numpy())
-                y_pred.extend(pred.cpu().numpy())
-                loss += criterion(out, batch.y).item()
-        acc = accuracy_score(y_true, y_pred)
-        if compute_confusion_matrix:
-            mat = confusion_matrix(y_true, y_pred)
-            return acc, loss / len(loader), mat
-        else:
-            return acc, loss / len(loader)
+    loss = 0
+    with torch.no_grad():
+        for batch in loader:
+            batch = batch.to(device)
+            out = model(batch.x, batch.edge_index, batch.batch)
+            pred = out.argmax(dim=1)
+            y_true.extend(batch.y.cpu().numpy())
+            y_pred.extend(pred.cpu().numpy())
+            loss += criterion(out, batch.y).item()
+    acc = accuracy_score(y_true, y_pred)
+    if compute_confusion_matrix:
+        mat = confusion_matrix(y_true, y_pred)
+        return acc, loss / len(loader), mat
+    else:
+        return acc, loss / len(loader)
 
 
 def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_rate=0.2,lr= 0.0001,
