@@ -510,6 +510,15 @@ def main_optuna():
 
 
 def main_baseline():
+    """Trains and evaluates a model using a predefined set of baseline hyperparameters.
+
+    This function defines a fixed set of hyperparameters (e.g., for epochs,
+    batch size, model type, specific model configurations) and uses them
+    to train a model (typically GAT as per current usage) on the dataset.
+    It loads the training and testing graph data from specified paths and
+    then calls the `train_model` function. The `train_model` function
+    handles the actual training, evaluation, and saving of results.
+    """
     epochs = 50
     batch_size = 16
     ID_model = "GraphNorm_combat"
@@ -525,6 +534,14 @@ def main_baseline():
 
 # LOCAL TESTING
 def test_run_baseline():
+    """Performs a local test run of the baseline GAT model training.
+
+    This function loads a small subset of the training and testing graph data
+    to quickly verify the `train_model` function with a GAT configuration.
+    It uses a predefined set of parameters suitable for a fast test (e.g.,
+    few epochs, small batch size). A success message is printed upon
+    completion. This is intended for local development and testing.
+    """
     train_df_pyg_big = load_graphs("data/graphs_baseline/train")
     test_df_pyg_big = load_graphs("data/graphs_baseline/test")
     train_df_pyg_small = train_df_pyg_big[:5]
@@ -552,12 +569,34 @@ def test_run_baseline():
 
 # LOCAL TESTING
 def main_optuna_test():
+    """Performs a local test run of the Optuna hyperparameter optimization.
+
+    This function sets up a minimal Optuna study using a small subset of
+    data and a limited number of trials (typically one) to test the
+    Optuna integration with the GAT model training. It defines a nested
+    `objective_test` function for this purpose. A success message is
+    printed upon completion. Intended for local development and testing.
+    """
     train_df_pyg_big = load_graphs("data/graphs_baseline/train")
     test_df_pyg_big = load_graphs("data/graphs_baseline/test")
     train_df_pyg_small = train_df_pyg_big[:5]
     test_df_pyg_small = test_df_pyg_big[:5]
 
     def objective_test(trial):
+        """Objective function for the `main_optuna_test` Optuna study.
+
+        Called by Optuna during the test optimization. It samples
+        hyperparameters from a reduced search space (suitable for testing)
+        using the `trial` object, trains a GAT model on a small subset of
+        data, and returns the F1 score.
+
+        Args:
+            trial (optuna.trial.Trial): An Optuna trial object, suggesting
+                hyperparameters from a limited test range.
+
+        Returns:
+            float: The F1 score from training the model with test hyperparameters.
+        """
         hidden_channels = trial.suggest_categorical("hidden_channels", [32])
         dropout_rate = trial.suggest_float("dropout_rate", 0.2, 0.3)
         lr = trial.suggest_float("lr", 1e-4, 1e-3, log=True)
