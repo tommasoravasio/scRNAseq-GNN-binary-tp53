@@ -152,6 +152,26 @@ def save_dataset(train_pyg, test_pyg, name_train="train_reteunica.pt", name_test
     torch.save(train_pyg, 'train_reteunica.pt')
     torch.save(test_pyg, 'test_reteunica.pt')
 
+def plot_the_correlation_matrix_colored(dataset_final, matrix):
+    """
+    Plotta il grafo della matrice di correlazione con colormap più visibile.
+    """
+    node_list = dataset_final.columns.to_list()
+    num_nodes = len(node_list)
+    tick_indices = np.arange(0, num_nodes, 100)
+    tick_labels = [node_list[i] for i in tick_indices]
+
+    plt.figure(figsize=(7, 7))
+    cmap = plt.get_cmap("magma")  # alternativa: "viridis", "plasma"
+    plt.imshow(matrix, cmap=cmap, interpolation='none')
+
+    plt.xticks(ticks=tick_indices, labels=tick_labels, rotation=90, fontsize=7)
+    plt.yticks(ticks=tick_indices, labels=tick_labels, fontsize=7)
+    plt.colorbar(label='Correlation coefficient (ρ)')
+    plt.title('Correlation matrix', pad=12)
+    plt.tight_layout()
+    plt.show()
+
 
 def main(feature_selection="HVG",batch_correction=None):
     df = pd.read_csv(f"notebooks/final_preprocessed_data_{feature_selection}_{batch_correction}.csv", index_col=0)

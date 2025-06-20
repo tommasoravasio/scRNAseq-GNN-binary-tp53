@@ -12,6 +12,11 @@ import load_data
 import preprocessing
 import network_constructor
 
+"""
+NOT IN USE FOR NOW
+Used for running on the cluster the comparison between the matrices with the initial genes and the HVG but it was too computationally heavy (~45000 genes)
+"""
+
 def plot_frequency_of_correlation_values(matrices, bins=50, alpha=0.5, filename="plot.png"):
 
     plt.figure(figsize=(10, 6))
@@ -59,6 +64,25 @@ def plot_correlation_comparison(df_expression, path_list):
         plt.close("all")
         del mat
         gc.collect()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def main():
