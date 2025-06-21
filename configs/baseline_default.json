@@ -1,0 +1,18 @@
+{
+  "epochs": 50,
+  "batch_size": 16,
+  "ID_model": "GraphNorm_combat",
+  "use_adamW": true,
+  "model_type": "gat",
+  "use_graphnorm": true,
+  "feature_selection": "target",
+  "graphs_path": "graphs_target_combat",
+  "early_stopping": false,
+  "hidden_channels": 64,
+  "dropout_rate": 0.2,
+  "lr": 0.0001,
+  "loss_weight": false,
+  "weight_decay": 1e-4,
+  "heads": 1,
+  "use_third_layer": false
+}
