@@ -15,4 +15,4 @@ module load miniconda3
 eval "$(conda shell.bash hook)"
 conda activate tp53
 cd $HOME/tp53
-python src/model_constructor.py --fine_tuning no --config configs/baseline_default.json
+python src/model_constructor.py --fine_tuning no --config configs/target_gat_baseline.json

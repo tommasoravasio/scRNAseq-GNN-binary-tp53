@@ -1,5 +1,5 @@
 {
-  "feature_selection": "target",
+  "feature_selection": "HVG",
   "base_data_path_prefix": "data/graphs_",
 
   "dataset_variants": {

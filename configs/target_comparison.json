@@ -1,0 +1,100 @@
+{
+  "feature_selection": "target",
+  "base_data_path_prefix": "data/graphs_",
+
+  "dataset_variants": {
+    "standard": "{feature_selection}_",
+    "combat": "{feature_selection}_combat",
+    "harmony": "{feature_selection}_harmony"
+  },
+
+  "default_train_model_params": {
+    "epochs": 50,
+    "batch_size": 16,
+    "lr": 0.0001,
+    "hidden_channels": 64,
+    "dropout_rate": 0.2,
+    "weight_decay": 1e-4,
+    "loss_weight": false,
+    "use_adamW": false,
+    "use_graphnorm": false,
+    "heads": 1,
+    "use_third_layer": false,
+    "early_stopping": false
+  },
+
+  "comparison_runs": [
+    {
+      "run_id": "baseline_gcn",
+      "dataset_variant_key": "standard",
+      "model_type": "gcn",
+      "train_model_params": {}
+    },
+    {
+      "run_id": "baseline_gat",
+      "dataset_variant_key": "standard",
+      "model_type": "gat",
+      "train_model_params": {}
+    },
+    {
+      "run_id": "combat_gcn",
+      "dataset_variant_key": "combat",
+      "model_type": "gcn",
+      "train_model_params": {}
+    },
+    {
+      "run_id": "combat_gat",
+      "dataset_variant_key": "combat",
+      "model_type": "gat",
+      "train_model_params": {}
+    },
+    {
+      "run_id": "harmony_gcn",
+      "dataset_variant_key": "combat",
+      "model_type": "gcn",
+      "train_model_params": {}
+    },
+    {
+      "run_id": "harmony_gat",
+      "dataset_variant_key": "combat",
+      "model_type": "gat",
+      "train_model_params": {}
+    },
+    {
+      "run_id": "weight_gcn",
+      "dataset_variant_key": "standard",
+      "model_type": "gcn",
+      "train_model_params": { "loss_weight": true }
+    },
+    {
+      "run_id": "weight_gat",
+      "dataset_variant_key": "standard",
+      "model_type": "gat",
+      "train_model_params": { "loss_weight": true }
+    },
+    {
+      "run_id": "AdamW_gcn",
+      "dataset_variant_key": "standard",
+      "model_type": "gcn",
+      "train_model_params": { "use_adamW": true }
+    },
+    {
+      "run_id": "AdamW_gat",
+      "dataset_variant_key": "standard",
+      "model_type": "gat",
+      "train_model_params": { "use_adamW": true }
+    },
+    {
+      "run_id": "GraphNorm_gcn",
+      "dataset_variant_key": "standard",
+      "model_type": "gcn",
+      "train_model_params": { "use_graphnorm": true }
+    },
+    {
+      "run_id": "GraphNorm_gat",
+      "dataset_variant_key": "standard",
+      "model_type": "gat",
+      "train_model_params": { "use_graphnorm": true }
+    }
+  ]
+}
