@@ -4,6 +4,7 @@ import torch
 import os
 import csv
 import json
+import sys
 from datetime import datetime
 from torch_geometric.data import Data
 import torch.nn.functional as F
@@ -288,7 +289,7 @@ def train_model(train_PyG, test_PyG, batch_size=32, hidden_channels=64, dropout_
     else:
         criterion = CrossEntropyLoss().to(device)
     
-    results_dir = f"{feature_selection}/{model_type}_results/{ID_model}"
+    results_dir = f"Results/{feature_selection}/{model_type}_results/{ID_model}"
     os.makedirs(results_dir, exist_ok=True)
     log_path = f"{results_dir}/training_log.csv"
     with open(log_path,mode="w",newline="") as f:
@@ -412,13 +413,27 @@ def load_graphs(path):
         list: A list of graph data objects (e.g., `torch_geometric.data.Data`).
     """
     graph_list = []
-    for pt_file in sorted(Path(path).glob("*.pt")):
+    path_obj = Path(path)
+    if not path_obj.exists() or not path_obj.is_dir():
+        print(f"Error: Graph directory not found or is not a directory: {path}", file=sys.stderr)
+        sys.exit(1) # Exit if path is invalid
+
+    pt_files = sorted(path_obj.glob("*.pt"))
+    if not pt_files:
+        print(f"Warning: No .pt files found in {path}. Exiting.", file=sys.stderr)
+        sys.exit(1) # Exit if no .pt files are found
+
+    for pt_file in pt_files:
         graph = torch.load(pt_file, weights_only=False)
 
         if isinstance(graph, list):
             graph_list.extend(graph)
         else:
             graph_list.append(graph)
+
+    if not graph_list:
+        print(f"Warning: No graphs were successfully loaded from {path}. Exiting.", file=sys.stderr)
+        sys.exit(1) # Exit if no graphs loaded
 
     return graph_list
 
@@ -509,28 +524,76 @@ def main_optuna():
         print(f"  {key}: {value}")
 
 
-def main_baseline():
-    """Trains and evaluates a model using a predefined set of baseline hyperparameters.
+def main_baseline(config_path):
+    """Trains and evaluates a model using hyperparameters from a JSON configuration file.
 
-    This function defines a fixed set of hyperparameters (e.g., for epochs,
-    batch size, model type, specific model configurations) and uses them
-    to train a model (typically GAT as per current usage) on the dataset.
-    It loads the training and testing graph data from specified paths and
-    then calls the `train_model` function. The `train_model` function
+    This function loads hyperparameters from the specified JSON file (e.g.,
+    epochs, batch size, model type, specific model configurations) and uses them
+    to train a model on the dataset. It loads the training and testing graph
+    data from paths constructed using `graphs_path_suffix` from the config
+    and then calls the `train_model` function. The `train_model` function
     handles the actual training, evaluation, and saving of results.
-    """
-    epochs = 50
-    batch_size = 16
-    ID_model = "GraphNorm_combat"
-    use_adamW=True
-    model_type="gat"
-    use_graphnorm=True
-    feature_selection="target"
-    graphs_path = "graphs_target_combat"
 
-    train_df_pyg = load_graphs(f"data/{graphs_path}/train")
-    test_df_pyg = load_graphs(f"data/{graphs_path}/test")
-    model = train_model(train_PyG=train_df_pyg, test_PyG=test_df_pyg, epochs = epochs, batch_size = batch_size, ID_model = ID_model, use_adamW=use_adamW, model_type=model_type, use_graphnorm=use_graphnorm, feature_selection=feature_selection, early_stopping=False)
+    Args:
+        config_path (str): Path to the JSON configuration file.
+    """
+    print(f"Loading configuration from: {config_path}")
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        print(f"Error: Configuration file not found at {config_path}", file=sys.stderr)
+        sys.exit(1)
+    except json.JSONDecodeError:
+        print(f"Error: Could not decode JSON from configuration file {config_path}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Configuration loaded: {config}")
+
+    epochs = config["epochs"]
+    batch_size = config["batch_size"]
+    ID_model = config["ID_model"]
+    use_adamW = config["use_adamW"]
+    model_type = config["model_type"]
+    use_graphnorm = config["use_graphnorm"]
+    feature_selection = config["feature_selection"]
+    graphs_path_suffix = config["graphs_path"] # Read from config
+
+    hidden_channels = config["hidden_channels"]
+    dropout_rate = config["dropout_rate"]
+    lr = config["lr"]
+    loss_weight = config["loss_weight"]
+    weight_decay = config["weight_decay"]
+    heads = config["heads"]
+    use_third_layer = config["use_third_layer"]
+    early_stopping = config["early_stopping"]
+
+    train_data_path = f"data/{graphs_path_suffix}/train"
+    test_data_path = f"data/{graphs_path_suffix}/test"
+    print(f"Loading training data from: {train_data_path}")
+    train_df_pyg = load_graphs(train_data_path)
+    print(f"Loading test data from: {test_data_path}")
+    test_df_pyg = load_graphs(test_data_path)
+
+    model = train_model(
+        train_PyG=train_df_pyg,
+        test_PyG=test_df_pyg,
+        epochs=epochs,
+        batch_size=batch_size,
+        ID_model=ID_model,
+        use_adamW=use_adamW,
+        model_type=model_type,
+        use_graphnorm=use_graphnorm,
+        feature_selection=feature_selection,
+        hidden_channels=hidden_channels,
+        dropout_rate=dropout_rate,
+        lr=lr,
+        loss_weight=loss_weight,
+        weight_decay=weight_decay,
+        heads=heads,
+        use_third_layer=use_third_layer,
+        early_stopping=early_stopping
+    )
 
 # LOCAL TESTING
 def test_run_baseline():
@@ -638,12 +701,17 @@ def main_optuna_test():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--fine_tuning", choices=["yes","no"],default="no")
+    parser.add_argument("--config", type=str, help="Path to the JSON configuration file for main_baseline")
     args=parser.parse_args()
 
     if args.fine_tuning == "yes":
         main_optuna()
-    else:
-        main_baseline()
+    else: # args.fine_tuning == "no"
+        if not args.config:
+            print("Error: --config <path_to_config.json> is required when --fine_tuning is 'no'.", file=sys.stderr)
+            sys.exit(1)
+        print(f"Starting baseline model training with config: {args.config}")
+        main_baseline(config_path=args.config)
 
     # #FOR TESTING
     # test_run_baseline()

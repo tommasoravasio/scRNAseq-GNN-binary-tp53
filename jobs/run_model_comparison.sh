@@ -13,4 +13,4 @@ eval "$(conda shell.bash hook)"
 conda activate tp53
 cd $HOME/tp53
 
-python src/model_comparison.py --feature_selection="target"
+python src/model_comparison.py --config configs/comparison_config.json
