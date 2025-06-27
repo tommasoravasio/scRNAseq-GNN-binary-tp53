@@ -17,7 +17,7 @@ conda activate tp53
 cd $HOME/tp53
 
 # #Simply train the model:
-# python src/model_constructor.py --mode train --config configs/target_gat_baseline.json
+# python src/model_constructor.py --mode train --config configs/simple_run_template.json
 
 # Run optuna hyperparameter optimization: 
-python src/model_constructor.py --mode optuna --config configs/optuna_test.json
+python src/model_constructor.py --mode optuna --config configs/optuna_template.json
