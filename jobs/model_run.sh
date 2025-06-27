@@ -15,8 +15,9 @@ module load miniconda3
 eval "$(conda shell.bash hook)"
 conda activate tp53
 cd $HOME/tp53
-# Optuna hyperparameter optimization: 
-python src/model_constructor.py --mode optuna --config configs/optuna_target_gat_combat.json
 
-# #Simply run the model:
+# #Simply train the model:
 # python src/model_constructor.py --mode train --config configs/target_gat_baseline.json
+
+# Run optuna hyperparameter optimization: 
+python src/model_constructor.py --mode optuna --config configs/optuna_target_gat_combat.json
