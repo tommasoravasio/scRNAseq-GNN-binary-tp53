@@ -1,5 +1,5 @@
 {
-  "study_name": "gat_hvg_tuning",
+  "study_name": "target_gat_combat_tuning",
   "direction": "maximize",
   "metric_to_optimize": "f1_score",
   "n_trials": 50,
@@ -8,11 +8,11 @@
     "epochs": 50,
     "batch_size": 16,
     "model_type": "gat",
-    "feature_selection": "HVG",
-    "graphs_path": "graphs_HVG_",
-    "use_graphnorm": true,
+    "feature_selection": "target",
+    "graphs_path": "graphs_target_",
+    "use_graphnorm": false,
     "use_adamW": true,
-    "early_stopping": true
+    "early_stopping": false
   },
 
   "hyperparameters": {
