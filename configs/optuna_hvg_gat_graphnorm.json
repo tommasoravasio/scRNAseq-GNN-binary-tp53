@@ -2,7 +2,7 @@
   "study_name": "HVG_gat_graphnorm_tuning",
   "direction": "maximize",
   "metric_to_optimize": "f1_score",
-  "n_trials": 50,
+  "n_trials": 20,
 
   "fixed_params": {
     "epochs": 50,

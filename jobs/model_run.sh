@@ -20,4 +20,4 @@ cd $HOME/tp53
 # python src/model_constructor.py --mode train --config configs/target_gat_baseline.json
 
 # Run optuna hyperparameter optimization: 
-python src/model_constructor.py --mode optuna --config configs/optuna_target_gat_combat.json
+python src/model_constructor.py --mode optuna --config configs/optuna_test.json
