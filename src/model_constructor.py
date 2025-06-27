@@ -17,7 +17,6 @@ from torch_geometric.nn import GATConv
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import optuna
 import argparse
-from optuna_utils import run_optuna_study
 
 
 class GCN(Module):
@@ -452,8 +451,8 @@ def main_optuna(optuna_config_path):
     """
     # The original main_optuna() content (epochs, batch_size, feature_selection, etc.)
     # has been moved to optuna_utils.py and is driven by the JSON config.
-        
-    # The import of run_optuna_study is now at the top of the file.
+    from optuna_utils import run_optuna_study # Moved import here
+
 
     print(f"Starting Optuna hyperparameter tuning with config: {optuna_config_path}")
     run_optuna_study(optuna_config_path)
@@ -645,6 +644,7 @@ if __name__ == "__main__":
     if args.mode == "optuna":
         # The main_optuna function now needs the config path for Optuna settings
         main_optuna(optuna_config_path=args.config)
+
     elif args.mode == "train":
         # main_baseline already accepts config_path
         main_baseline(config_path=args.config)
