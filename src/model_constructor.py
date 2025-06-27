@@ -17,7 +17,6 @@ from torch_geometric.nn import GATConv
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import optuna
 import argparse
-# Removed: from optuna_utils import run_optuna_study
 
 
 class GCN(Module):
@@ -452,8 +451,8 @@ def main_optuna(optuna_config_path):
     """
     # The original main_optuna() content (epochs, batch_size, feature_selection, etc.)
     # has been moved to optuna_utils.py and is driven by the JSON config.
-    
     from optuna_utils import run_optuna_study # Moved import here
+
 
     print(f"Starting Optuna hyperparameter tuning with config: {optuna_config_path}")
     run_optuna_study(optuna_config_path)
@@ -635,22 +634,23 @@ def main_optuna_test():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run model training or hyperparameter tuning.")
-    parser.add_argument("--mode", choices=["baseline", "optuna"], required=True,
-                        help="'baseline' to train a model with a specific config, 'optuna' to run hyperparameter tuning.")
+    parser.add_argument("--mode", choices=["train", "optuna"], required=True,
+                        help="'train' to train a model with a specific config, 'optuna' to run hyperparameter tuning.")
     parser.add_argument("--config", type=str, required=True,
-                        help="Path to the JSON configuration file. For 'baseline' mode, this is the model config. For 'optuna' mode, this is the Optuna study config.")
+                        help="Path to the JSON configuration file. For 'train' mode, this is the model config. For 'optuna' mode, this is the Optuna study config.")
 
     args = parser.parse_args()
 
     if args.mode == "optuna":
         # The main_optuna function now needs the config path for Optuna settings
         main_optuna(optuna_config_path=args.config)
-    elif args.mode == "baseline":
+
+    elif args.mode == "train":
         # main_baseline already accepts config_path
         main_baseline(config_path=args.config)
     else:
         # Should not happen due to choices in argparse
-        print(f"Error: Invalid mode '{args.mode}'. Choose 'baseline' or 'optuna'.", file=sys.stderr)
+        print(f"Error: Invalid mode '{args.mode}'. Choose 'train' or 'optuna'.", file=sys.stderr)
         sys.exit(1)
 
     # #FOR TESTING
