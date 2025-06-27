@@ -17,6 +17,7 @@ from torch_geometric.nn import GATConv
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import optuna
 import argparse
+# Removed: from optuna_utils import run_optuna_study
 
 
 class GCN(Module):
@@ -439,89 +440,23 @@ def load_graphs(path):
 
 
 
-def main_optuna():
-    """Performs hyperparameter optimization for the GAT model using Optuna.
+def main_optuna(optuna_config_path):
+    """Performs hyperparameter optimization using Optuna based on a config file.
 
-    This function defines fixed parameters like epochs and batch size, then
-    sets up an Optuna study to find the best hyperparameters for the GAT model.
-    The hyperparameters searched include hidden channels, dropout rate,
-    learning rate, weight decay, number of attention heads, usage of
-    loss weighting, and inclusion of a third GAT layer.
+    This function acts as a wrapper to call the main Optuna study runner
+    located in `optuna_utils.py`. It passes the path to the Optuna JSON
+    configuration file.
 
-    The `objective` function (defined nestedly) is maximized based on the
-    F1 score achieved on the test set. Results of the best trial, including
-    the F1 score and corresponding parameters, are printed to the console.
+    Args:
+        optuna_config_path (str): Path to the JSON configuration file for Optuna.
     """
-    epochs=50
-    batch_size=16
-    feature_selection="HVG"
-    graphs_path = "graphs_HVG_"
+    # The original main_optuna() content (epochs, batch_size, feature_selection, etc.)
+    # has been moved to optuna_utils.py and is driven by the JSON config.
     
-    def objective(trial):
-        """Objective function for Optuna hyperparameter optimization.
+    from optuna_utils import run_optuna_study # Moved import here
 
-        This function is called by Optuna for each trial. It samples
-        hyperparameters for the GAT model using the `trial` object,
-        trains the model using these hyperparameters, and returns the
-        F1 score achieved on the test set.
-
-        Args:
-            trial (optuna.trial.Trial): An Optuna trial object that suggests
-                values for hyperparameters like hidden_channels, dropout_rate,
-                learning_rate, weight_decay, heads, loss_weight, and
-                use_third_layer.
-
-        Returns:
-            float: The F1 score obtained from training the model with the
-                   suggested hyperparameters. This score is what Optuna
-                   attempts to maximize.
-        """
-        hidden_channels = trial.suggest_categorical("hidden_channels", [32, 64, 128])
-        dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
-        lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
-        weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
-        heads = trial.suggest_categorical("heads", [1, 2, 4, 8, 16])
-        loss_weight = trial.suggest_categorical("loss_weight", [True, False])
-        use_third_layer = trial.suggest_categorical("use_third_layer", [True, False])
-
-        train_df_pyg = load_graphs(f"data/{graphs_path}/train")    
-        test_df_pyg = load_graphs(f"data/{graphs_path}/test")
-
-        model = train_model(
-            train_PyG=train_df_pyg,
-            test_PyG=test_df_pyg,
-            hidden_channels=hidden_channels,
-            dropout_rate=dropout_rate,
-            lr=lr,
-            use_adamW=True,
-            weight_decay=weight_decay,
-            loss_weight= loss_weight,
-            epochs=epochs,
-            batch_size=batch_size,
-            ID_model=f"optuna_{trial.number}",
-            model_type = "gat",
-            heads=heads,
-            use_graphnorm=True,
-            use_third_layer = use_third_layer,
-            feature_selection=feature_selection,
-            early_stopping=False
-        )
-
-        with open(f"{feature_selection}/gat_results/optuna_{trial.number}/summary_metrics.json") as f:
-            metrics = json.load(f)
-
-        return metrics["f1_score"]
-        
-
-    study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=20)
-
-    print("Best trial:")
-    trial = study.best_trial
-    print(f"F1: {trial.value}")
-    print("Params:")
-    for key, value in trial.params.items():
-        print(f"  {key}: {value}")
+    print(f"Starting Optuna hyperparameter tuning with config: {optuna_config_path}")
+    run_optuna_study(optuna_config_path)
 
 
 def main_baseline(config_path):
@@ -699,19 +634,24 @@ def main_optuna_test():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--fine_tuning", choices=["yes","no"],default="no")
-    parser.add_argument("--config", type=str, help="Path to the JSON configuration file for main_baseline")
-    args=parser.parse_args()
+    parser = argparse.ArgumentParser(description="Run model training or hyperparameter tuning.")
+    parser.add_argument("--mode", choices=["baseline", "optuna"], required=True,
+                        help="'baseline' to train a model with a specific config, 'optuna' to run hyperparameter tuning.")
+    parser.add_argument("--config", type=str, required=True,
+                        help="Path to the JSON configuration file. For 'baseline' mode, this is the model config. For 'optuna' mode, this is the Optuna study config.")
 
-    if args.fine_tuning == "yes":
-        main_optuna()
-    else: # args.fine_tuning == "no"
-        if not args.config:
-            print("Error: --config <path_to_config.json> is required when --fine_tuning is 'no'.", file=sys.stderr)
-            sys.exit(1)
-        print(f"Starting baseline model training with config: {args.config}")
+    args = parser.parse_args()
+
+    if args.mode == "optuna":
+        # The main_optuna function now needs the config path for Optuna settings
+        main_optuna(optuna_config_path=args.config)
+    elif args.mode == "baseline":
+        # main_baseline already accepts config_path
         main_baseline(config_path=args.config)
+    else:
+        # Should not happen due to choices in argparse
+        print(f"Error: Invalid mode '{args.mode}'. Choose 'baseline' or 'optuna'.", file=sys.stderr)
+        sys.exit(1)
 
     # #FOR TESTING
     # test_run_baseline()
