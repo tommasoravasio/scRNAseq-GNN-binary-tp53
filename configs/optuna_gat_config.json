@@ -1,0 +1,60 @@
+{
+  "study_name": "gat_hvg_tuning",
+  "direction": "maximize",
+  "metric_to_optimize": "f1_score",
+  "n_trials": 50,
+
+  "fixed_params": {
+    "epochs": 50,
+    "batch_size": 16,
+    "model_type": "gat",
+    "feature_selection": "HVG",
+    "graphs_path": "graphs_HVG_",
+    "use_graphnorm": true,
+    "use_adamW": true,
+    "early_stopping": true
+  },
+
+  "hyperparameters": {
+    "lr": {
+      "name": "lr",
+      "type": "float",
+      "low": 1e-5,
+      "high": 1e-2,
+      "log": true
+    },
+    "hidden_channels": {
+      "name": "hidden_channels",
+      "type": "categorical",
+      "choices": [32, 64, 128]
+    },
+    "dropout_rate": {
+      "name": "dropout_rate",
+      "type": "float",
+      "low": 0.1,
+      "high": 0.5
+    },
+    "weight_decay": {
+      "name": "weight_decay",
+      "type": "float",
+      "low": 1e-6,
+      "high": 1e-3,
+      "log": true
+    },
+    "heads": {
+      "name": "heads",
+      "type": "categorical",
+      "choices": [1, 2, 4, 8]
+    },
+    "loss_weight": {
+      "name": "loss_weight",
+      "type": "categorical",
+      "choices": [true, false]
+    },
+    "use_third_layer": {
+      "name": "use_third_layer",
+      "type": "categorical",
+      "choices": [true, false]
+    }
+  }
+}
