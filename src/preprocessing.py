@@ -2,6 +2,8 @@ import scanpy as sc
 import anndata as ad
 import mygene
 import pandas as pd
+import numpy as np
+from collections import defaultdict
 
 def get_genes_symbols(adata, EnsIDs_column, new_column_name='gene_symbols_mapped'):
     """
@@ -57,6 +59,124 @@ def add_mutation_column(adata, df_mutation, cell_lines_column_name = "Sample_Nam
     print(f"Removed {initial_n - adata.n_obs} cells with unknown mutation status.")
     print(f"Number matching lines: {adata.n_obs}")
     print(f"Percentage of matching cell: {adata.n_obs / initial_n * 100:.2f}%")
+
+
+#####################################   BINNING FUNCTIONS ##################################
+
+def digitize(x, bins, side="both"):
+
+    left_digits = np.digitize(x, bins)
+    if side == "one":
+        return left_digits
+
+    right_digits = np.digitize(x, bins, right=True)
+
+    rands = np.random.rand(len(x))  # uniform random numbers
+
+    # randomly assign each element to the left or right bin if different
+    digits = rands * (right_digits - left_digits) + left_digits
+    digits = np.ceil(digits).astype(np.int64)
+    return digits
+
+def bin_data(x, n_bins):
+    """
+    Binning procedure at the patient level, RNA-seq procedure from 
+    https://github.com/bowang-lab/scGPT/blob/main/scgpt/preprocess.py
+    """
+    
+    binned_rows = []
+
+    for row in x:
+        # if RNAseq data, impose zeros remain zeros
+        non_zero_ids = row.nonzero()
+        non_zero_row = row[non_zero_ids]
+        # collect the quantiles of the non zero values of the row
+        bins = np.quantile(non_zero_row, np.linspace(0, 1, n_bins - 1))
+        non_zero_digits = digitize(non_zero_row, bins)
+
+        binned_row = np.zeros_like(row, dtype=np.int64)
+        binned_row[non_zero_ids] = non_zero_digits
+        
+
+
+        binned_rows.append(binned_row)
+
+    binned_data = np.stack(binned_rows)
+    return binned_data
+
+def cdf_data(x):
+    """Get cdf value of x, at row (patient) level"""
+
+    cdf_rows = []
+
+    for row in x:
+
+        inp_row = row[row != 0].copy()
+        cdf_dict = {0.:0.}
+
+
+        values, counts = np.unique(inp_row, return_counts=True)
+        cdf = np.cumsum(counts) / len(inp_row)
+        cdf_dict.update({values[i]:cdf[i] for i in range(len(values))})
+        cdf_rows.append(np.vectorize(cdf_dict.get)(row))
+
+    cdf_data = np.stack(cdf_rows)
+    return cdf_data
+
+def rank_data(x):
+    """Get rank of each entry of x, at row (patient) level, with random assignment for ties"""
+
+
+    rank_rows = []
+
+    for row in x:
+
+        inp_row = row[row != 0].copy()
+
+
+        ranks = inp_row.argsort().argsort() + 1
+        rank_dict = dict()
+
+        for val in np.unique(inp_row):
+            val_indices = np.where(inp_row == val)[0]
+            val_ranks = ranks[val_indices]
+            np.random.shuffle(val_ranks)  # randomly assign within ties
+            rank_dict[val] = val_ranks.tolist()
+
+        rank_row = np.zeros_like(row, dtype=float)
+        n = len(inp_row)
+        for i, val in enumerate(row):
+            rank_row[i] = 0.
+
+        rank_rows.append(rank_row)
+
+    rank_data = np.stack(rank_rows)
+    return rank_data
+
+def avg_rank_data(x):
+    """Get avg rank of each entry of x, at row (patient) level"""
+
+    avg_rank_rows = []
+
+    for row in x:
+        inp_row = row[row != 0].copy()
+        ranks_dict = defaultdict(list)
+        ranks_dict[0.].append(0.)
+
+        ranks = inp_row.argsort().argsort() + 1
+        for i in range(len(inp_row)):
+            ranks_dict[inp_row[i]].append(ranks[i])
+
+        n = len(inp_row)
+        avg_rank_dict = {rank:np.mean(ranks_dict[rank]) / n for rank in ranks_dict.keys()}
+        avg_rank_rows.append(np.vectorize(avg_rank_dict.get)(row))
+
+    avg_rank_data = np.stack(avg_rank_rows)
+    return avg_rank_data
+
+
+######################################################################################################
+
 
 
 def main(feature_selection="HVG", batch_correction=None):  
