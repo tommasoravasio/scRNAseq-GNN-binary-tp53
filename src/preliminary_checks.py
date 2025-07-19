@@ -1,3 +1,6 @@
+"""
+Quick XGBoost evaluation and cross-validation utilities.
+"""
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -6,6 +9,7 @@ import xgboost as xgb
 
 
 def nested_cv_holdout_xgboost(df, label_col="mutation_status", n_splits=5):
+    """Nested cross-validation with XGBoost and holdout test."""
     label_mapping = {"WT": 0, "MUT": 1}
     df = df.copy()
     df[label_col] = df[label_col].map(label_mapping)
@@ -63,6 +67,7 @@ def nested_cv_holdout_xgboost(df, label_col="mutation_status", n_splits=5):
 
 
 def xgboost_balanced_subsample(df, label_col="mutation_status", n_per_class=1000, n_repeats=3, test_size=0.2):
+    """Repeated XGBoost on balanced random subsamples."""
     label_mapping = {"WT": 0, "MUT": 1}
     df = df.copy()
     df[label_col] = df[label_col].map(label_mapping)

@@ -1,3 +1,6 @@
+"""
+Check and visualize target gene correlation and expression.
+"""
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,9 +9,7 @@ import network_constructor
 
 
 def plot_frequency_of_correlation_values(matrices, bins=50, alpha=0.5):
-    """
-    Plot the frequency of correlation values.
-    """
+    """Plot histogram(s) of correlation values."""
     plt.figure(figsize=(10, 6))
     bin_edges = np.linspace(-1, 1, bins + 1)
 
@@ -29,7 +30,7 @@ def plot_frequency_of_correlation_values(matrices, bins=50, alpha=0.5):
 
 
 def import_and_create_matrices_for_plotting(path,mat_name,col_name="Ensembl ID",verbosity=False):
-    "Expect to have a column named 'Ensembl ID' in the excel file, can specify the name of the columns otherwise with col_name"
+    """Build correlation matrix for a gene list from Excel file."""
     tab = pd.read_excel(path)
     tab_ensembl_ids = [gene for gene in tab[col_name] if gene in df.columns]
     df_tab = df[tab_ensembl_ids].copy()
@@ -41,6 +42,7 @@ def import_and_create_matrices_for_plotting(path,mat_name,col_name="Ensembl ID",
 
 
 def plot_correlation_comparison(df_expression,path_list):
+    """Plot and compare correlation histograms for gene sets."""
     if not isinstance(path_list, list):
         path_list = [path_list]
 
@@ -60,6 +62,7 @@ def plot_correlation_comparison(df_expression,path_list):
         gc.collect()
 
 def plot_mean_expression_by_gene(df_mut, df_wt):
+    """Plot mean expression per gene for MUT and WT groups."""
     df_mut_genes = df_mut.drop(columns=["mutation_type"]).copy()
     df_wt_genes = df_wt.drop(columns=["mutation_type"]).copy()
     means_mut = df_mut_genes.mean(axis=0)

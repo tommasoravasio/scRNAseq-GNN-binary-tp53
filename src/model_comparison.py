@@ -1,3 +1,8 @@
+"""
+This script orchestrates the comparison of different architecture on single-cell RNA-seq graph datasets. 
+    python model_comparison.py --config configs/comparison_template.json
+"""
+
 import os
 import sys
 import json
@@ -34,6 +39,7 @@ import model_constructor
 
 
 def plot_training_curves(csv_path, model_name="Model"):
+    """Plot training/validation curves from CSV log."""
     import pandas as pd
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -80,7 +86,7 @@ def plot_training_curves(csv_path, model_name="Model"):
 
 
 def main(config_path):
-    # Inside main(config_path):
+    """Run model comparisons from a config file."""
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)
@@ -128,15 +134,14 @@ def main(config_path):
         test_path = Path(f"{base_data_path_prefix}{actual_variant_suffix}/test")
 
         print(f"Loading train data from: {train_path}")
-        # Assuming model_constructor.load_graphs is available and handles its own errors/exits
         train_pyg = model_constructor.load_graphs(str(train_path))
-        if not train_pyg: # If load_graphs returns empty list (and didn't exit)
+        if not train_pyg: 
              print(f"Run '{run_id}': Failed to load training data from {train_path}. Skipping.", file=sys.stderr)
              continue
 
         print(f"Loading test data from: {test_path}")
         test_pyg = model_constructor.load_graphs(str(test_path))
-        if not test_pyg: # If load_graphs returns empty list (and didn't exit)
+        if not test_pyg: 
              print(f"Run '{run_id}': Failed to load test data from {test_path}. Skipping.", file=sys.stderr)
              continue
 
@@ -145,22 +150,19 @@ def main(config_path):
 
         current_run_params["ID_model"] = run_id
         current_run_params["model_type"] = model_type
-        # Pass the global_feature_selection to train_model, as it uses it for structuring results_dir
         current_run_params["feature_selection"] = global_feature_selection
 
         print(f"Run '{run_id}': Training with params: {current_run_params}")
 
         try:
-            # Ensure model_constructor.train_model is correctly called
             model_constructor.train_model(
                 train_PyG=train_pyg,
                 test_PyG=test_pyg,
-                **current_run_params # Unpack all parameters for train_model
+                **current_run_params 
             )
             print(f"--- Finished Run: {run_id} ---")
         except Exception as e:
             print(f"Run '{run_id}': Error during training: {e}", file=sys.stderr)
-            # Optionally, add gc.collect() and torch.cuda.empty_cache() here if memory is an issue
 
     print("\nAll configured comparison runs attempted.")
 

@@ -1,3 +1,7 @@
+"""
+Compare and visualize gene-gene correlation matrices from single-cell RNA-seq data.
+"""
+
 import os
 import sys
 import pandas as pd
@@ -6,11 +10,10 @@ import scanpy as sc
 import anndata as ad
 import matplotlib.pyplot as plt
 import gc
-
-sys.path.append(os.path.abspath("src"))
 import load_data
 import preprocessing
 import network_constructor
+sys.path.append(os.path.abspath("src"))
 
 """
 NOT IN USE FOR NOW
@@ -18,7 +21,7 @@ Used for running on the cluster the comparison between the matrices with the ini
 """
 
 def plot_frequency_of_correlation_values(matrices, bins=50, alpha=0.5, filename="plot.png"):
-
+    """Plot histogram(s) of correlation values and save to file."""
     plt.figure(figsize=(10, 6))
     for label, mat in matrices.items():
         values = mat.flatten()
@@ -36,6 +39,7 @@ def plot_frequency_of_correlation_values(matrices, bins=50, alpha=0.5, filename=
 
 
 def import_and_create_matrices_for_plotting(path, df_expression, col_name="Ensembl ID", verbosity=False):
+    """Build correlation matrix for a gene list from Excel file."""
     tab = pd.read_excel(path)
     tab_ensembl_ids = [gene for gene in tab[col_name] if gene in df_expression.columns]
     df_tab = df_expression[tab_ensembl_ids].copy()
@@ -47,41 +51,21 @@ def import_and_create_matrices_for_plotting(path, df_expression, col_name="Ensem
 
 
 def plot_correlation_comparison(df_expression, path_list):
-
+    """Plot and save correlation histograms for full and subset gene sets."""
     if not isinstance(path_list, list):
         path_list = [path_list]
-
     mat = network_constructor.build_correlation_matrix(df_expression, corr_threshold=0., p_value_threshold=1)
     plot_frequency_of_correlation_values({"Original": mat}, bins=50, alpha=0.5, filename="correlation_hist_original.png")
     plt.close("all")
     del mat
     gc.collect()
-
     for path in path_list:
         label = path.split("/")[-1].split(".")[0]
-        mat = import_and_create_matrices_for_plotting(path, df_expression, mat_name=label, col_name="Ensembl ID", verbosity=False)
+        mat = import_and_create_matrices_for_plotting(path, df_expression, col_name="Ensembl ID", verbosity=False)
         plot_frequency_of_correlation_values({label: mat}, bins=50, alpha=0.5, filename=f"correlation_hist_{label}.png")
         plt.close("all")
         del mat
         gc.collect()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
