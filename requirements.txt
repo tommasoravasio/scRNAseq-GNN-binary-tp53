@@ -1,0 +1,13 @@
+torch
+torch-geometric
+scanpy
+anndata
+xgboost
+optuna
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
+mygene
+networkx 
