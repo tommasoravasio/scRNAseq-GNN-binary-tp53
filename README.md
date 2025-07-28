@@ -69,6 +69,9 @@ The workflow is **hybrid**:
 - **Best GNN Model:** GAT with ComBat batch correction on TP53 target genes, F1 score = 0.998
 - **Interpretability:** Graph-based models capture gene–gene interactions, offering improved generalization and biological insight compared to classical ML approaches.
 
+## Final report
+The detailed report document describing this project can be found [here](Final_Report.pdf).
+
 
 
 *For questions or collaboration opportunities, feel free to contact me.*
