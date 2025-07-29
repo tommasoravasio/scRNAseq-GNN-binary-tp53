@@ -44,14 +44,15 @@ pip install -r requirements.txt
 ### 4. Run the Pipeline
 
 The workflow is **hybrid**:
-- **Heavy computations** (e.g., graph construction, model training, hyperparameter optimization) are performed by running the shell scripts in the `jobs/` directory.  
-  For example:
-  ```bash
-  bash jobs/preprocessing_run.sh
-  bash jobs/network_contructor_run.sh
-  bash jobs/model_run.sh
-  ```
-  *(Adjust the script and parameters as needed for your experiment.)*
+- **Heavy computations** (such as graph construction, model training, and hyperparameter optimization) are typically launched via scripts in the `jobs/` directory.  
+  - On an HPC cluster (e.g., with SLURM), you can submit the provided SLURM job scripts (e.g., `sbatch jobs/graph_constructor.sh`).
+  - On a local machine, you can run the corresponding bash scripts directly:
+    ```bash
+    bash jobs/preprocessing_run.sh
+    bash jobs/network_contructor_run.sh
+    bash jobs/model_run.sh
+    ```
+  *(Choose the script and submission method appropriate for your environment. The scripts are designed to be adaptable for both cluster and local execution, modify as needed for your setup.)*
 
 - **Jupyter Notebook** (`notebooks/main_experiment.ipynb`) is used for:
   - Displaying results and visualizations
@@ -61,7 +62,7 @@ The workflow is **hybrid**:
 
 **Typical workflow:**
 1. Run the appropriate shell script(s) to generate data, graphs, or model results.
-2. Use the notebook to preprocess data (e.g., normalization), visualize, and analyze the outputs.
+2. Use the notebook to visualize, and analyze the outputs.
 3. Repeat as needed for different experiments or configurations.
 
 ## Results
