@@ -3,6 +3,8 @@
 ## Overview
 This project explores the application of **graph neural networks (GNNs)** to predict the mutational status of the TP53 gene from **single-cell RNA sequencing (scRNA-seq)** data. The pipeline leverages advanced machine learning and network analysis techniques to address a key problem in cancer genomics: identifying TP53 mutations, which are highly relevant for cancer diagnostics and research. This project was designed and implemented as my bachelor's thesis.
 
+In addition, I have continued this work by developing a multiclass classifier to distinguish among different TP53 mutation types. The extended implementation can be found here: https://github.com/tommasoravasio/scRNAseq-GNN-multiclass-tp53
+
 ## Motivation
 TP53, known as the "guardian of the genome," is one of the most frequently mutated genes in human cancers. Accurate detection of its mutation status is crucial for understanding tumor biology and guiding therapeutic decisions. This project demonstrates how modern deep learning, more specifically GNNs, can be used to extract biologically meaningful patterns from high-dimensional, noisy and sparse single-cell data.
 
